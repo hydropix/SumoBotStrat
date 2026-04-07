@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 820" font-family="Consolas, monospace" font-size="11">
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6Z" fill="#333"/>
+    </marker>
+    <marker id="arrR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6Z" fill="#c0392b"/>
+    </marker>
+    <marker id="arrB" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6Z" fill="#2980b9"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="820" fill="#1a1a2e" rx="8"/>
+  <text x="550" y="32" text-anchor="middle" fill="#e0e0e0" font-size="18" font-weight="bold">SUMOBOT — Schema Electrique</text>
+  <text x="550" y="50" text-anchor="middle" fill="#888" font-size="11">Arduino Mega 2560 + L298N + VL53L0X x3 + TCRT5000 x3</text>
+
+  <!-- ==================== BATTERIE ==================== -->
+  <rect x="30" y="80" width="130" height="60" rx="6" fill="#2c3e50" stroke="#e74c3c" stroke-width="2"/>
+  <text x="95" y="105" text-anchor="middle" fill="#e74c3c" font-size="13" font-weight="bold">BATTERIE</text>
+  <text x="95" y="120" text-anchor="middle" fill="#ecf0f1" font-size="11">NiMH 7.2V</text>
+  <text x="95" y="133" text-anchor="middle" fill="#888" font-size="9">6 cells, 2000mAh</text>
+  <!-- Bornes -->
+  <circle cx="55" cy="145" r="5" fill="#e74c3c"/> <text x="55" y="158" text-anchor="middle" fill="#e74c3c" font-size="9">+</text>
+  <circle cx="135" cy="145" r="5" fill="#333"/> <text x="135" y="158" text-anchor="middle" fill="#bbb" font-size="9">-</text>
+
+  <!-- ==================== BUCK LM2596 ==================== -->
+  <rect x="30" y="200" width="130" height="55" rx="6" fill="#2c3e50" stroke="#f39c12" stroke-width="2"/>
+  <text x="95" y="222" text-anchor="middle" fill="#f39c12" font-size="12" font-weight="bold">BUCK LM2596</text>
+  <text x="95" y="238" text-anchor="middle" fill="#ecf0f1" font-size="11">7.2V → 5V</text>
+  <text x="50" y="195" fill="#e74c3c" font-size="9">IN+</text>
+  <text x="110" y="195" fill="#bbb" font-size="9">IN-</text>
+  <text x="50" y="262" fill="#2ecc71" font-size="9">OUT 5V</text>
+  <text x="110" y="262" fill="#bbb" font-size="9">OUT GND</text>
+
+  <!-- Bat → Buck -->
+  <line x1="55" y1="150" x2="55" y2="200" stroke="#e74c3c" stroke-width="2"/>
+  <line x1="135" y1="150" x2="135" y2="200" stroke="#555" stroke-width="2"/>
+
+  <!-- ==================== L298N ==================== -->
+  <rect x="250" y="80" width="200" height="170" rx="6" fill="#2c3e50" stroke="#e67e22" stroke-width="2"/>
+  <text x="350" y="102" text-anchor="middle" fill="#e67e22" font-size="14" font-weight="bold">L298N</text>
+  <text x="350" y="118" text-anchor="middle" fill="#888" font-size="9">Jumper 5V AUTO-ALIM actif</text>
+
+  <!-- L298N pins gauche -->
+  <text x="260" y="140" fill="#e74c3c" font-size="10">VCC (7.2V)</text>
+  <text x="260" y="155" fill="#bbb" font-size="10">GND</text>
+  <text x="260" y="175" fill="#3498db" font-size="10">ENA → Pin 10</text>
+  <text x="260" y="190" fill="#3498db" font-size="10">IN1 → Pin 9</text>
+  <text x="260" y="205" fill="#3498db" font-size="10">IN2 → Pin 8</text>
+  <text x="260" y="225" fill="#9b59b6" font-size="10">IN3 → Pin 6</text>
+  <text x="260" y="240" fill="#9b59b6" font-size="10">IN4 → Pin 7</text>
+
+  <!-- L298N sorties droite -->
+  <text x="390" y="140" fill="#e67e22" font-size="10">OUT1 ──┐</text>
+  <text x="390" y="155" fill="#e67e22" font-size="10">OUT2 ──┤ MOT.G</text>
+  <text x="390" y="180" fill="#e67e22" font-size="10">OUT3 ──┐</text>
+  <text x="390" y="195" fill="#e67e22" font-size="10">OUT4 ──┤ MOT.D</text>
+  <text x="260" y="243" fill="#9b59b6" font-size="10">ENB → Pin 5</text>
+
+  <!-- Bat → L298N VCC -->
+  <line x1="55" y1="165" x2="55" y2="165" stroke="#e74c3c" stroke-width="1.5"/>
+  <path d="M55,145 L55,70 L240,70 L240,135 L250,135" stroke="#e74c3c" stroke-width="2" fill="none"/>
+  <path d="M135,145 L135,65 L245,65 L245,150 L250,150" stroke="#555" stroke-width="2" fill="none"/>
+
+  <!-- ==================== MOTEURS ==================== -->
+  <rect x="520" y="95" width="100" height="40" rx="4" fill="#34495e" stroke="#e67e22" stroke-width="1.5"/>
+  <text x="570" y="112" text-anchor="middle" fill="#e67e22" font-size="11" font-weight="bold">N20 Gauche</text>
+  <text x="570" y="127" text-anchor="middle" fill="#888" font-size="9">12V 500RPM</text>
+
+  <rect x="520" y="155" width="100" height="40" rx="4" fill="#34495e" stroke="#e67e22" stroke-width="1.5"/>
+  <text x="570" y="172" text-anchor="middle" fill="#e67e22" font-size="11" font-weight="bold">N20 Droite</text>
+  <text x="570" y="187" text-anchor="middle" fill="#888" font-size="9">12V 500RPM</text>
+
+  <!-- L298N → Moteurs -->
+  <line x1="455" y1="115" x2="520" y2="115" stroke="#e67e22" stroke-width="1.5" marker-end="url(#arr)"/>
+  <line x1="455" y1="175" x2="520" y2="175" stroke="#e67e22" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ==================== ARDUINO MEGA ==================== -->
+  <rect x="250" y="320" width="480" height="260" rx="8" fill="#16213e" stroke="#2ecc71" stroke-width="2"/>
+  <text x="490" y="345" text-anchor="middle" fill="#2ecc71" font-size="16" font-weight="bold">ARDUINO MEGA 2560</text>
+  <text x="490" y="362" text-anchor="middle" fill="#888" font-size="10">Alimente via pin 5V (PAS Vin)</text>
+
+  <!-- Pins gauche -->
+  <text x="265" y="395" fill="#3498db" font-size="10" font-weight="bold">MOTEURS (PWM)</text>
+  <text x="265" y="412" fill="#ecf0f1" font-size="10">Pin 10 (ENA) ←─ PWM G</text>
+  <text x="265" y="427" fill="#ecf0f1" font-size="10">Pin  9 (IN1) ←─ Dir G</text>
+  <text x="265" y="442" fill="#ecf0f1" font-size="10">Pin  8 (IN2) ←─ Dir G</text>
+  <text x="265" y="460" fill="#ecf0f1" font-size="10">Pin  6 (IN3) ←─ Dir D</text>
+  <text x="265" y="475" fill="#ecf0f1" font-size="10">Pin  7 (IN4) ←─ Dir D</text>
+  <text x="265" y="490" fill="#ecf0f1" font-size="10">Pin  5 (ENB) ←─ PWM D</text>
+
+  <!-- Pins droite -->
+  <text x="510" y="395" fill="#e74c3c" font-size="10" font-weight="bold">CAPTEURS LIGNE</text>
+  <text x="510" y="412" fill="#ecf0f1" font-size="10">Pin A0 ←─ TCRT FL</text>
+  <text x="510" y="427" fill="#ecf0f1" font-size="10">Pin A1 ←─ TCRT FR</text>
+  <text x="510" y="442" fill="#ecf0f1" font-size="10">Pin A2 ←─ TCRT R</text>
+
+  <text x="510" y="468" fill="#f39c12" font-size="10" font-weight="bold">I2C (LASERS)</text>
+  <text x="510" y="485" fill="#ecf0f1" font-size="10">Pin 20 (SDA) ─── bus I2C</text>
+  <text x="510" y="500" fill="#ecf0f1" font-size="10">Pin 21 (SCL) ─── bus I2C</text>
+
+  <text x="510" y="525" fill="#9b59b6" font-size="10" font-weight="bold">XSHUT (LASERS)</text>
+  <text x="510" y="542" fill="#ecf0f1" font-size="10">Pin 22 ──── XSHUT laser0 (C)</text>
+  <text x="510" y="557" fill="#ecf0f1" font-size="10">Pin 23 ──── XSHUT laser1 (G)</text>
+  <text x="510" y="572" fill="#ecf0f1" font-size="10">Pin 24 ──── XSHUT laser2 (D)</text>
+
+  <!-- Bouton + LED -->
+  <text x="265" y="520" fill="#2ecc71" font-size="10" font-weight="bold">INTERFACE</text>
+  <text x="265" y="537" fill="#ecf0f1" font-size="10">Pin  2 ←─ Bouton START</text>
+  <text x="265" y="552" fill="#ecf0f1" font-size="10">Pin 13 ──→ LED etat</text>
+  <text x="265" y="567" fill="#ecf0f1" font-size="10">Pin 5V ←── Buck OUT 5V</text>
+  <text x="265" y="572" fill="transparent" font-size="10">.</text>
+
+  <!-- ==================== VL53L0X x3 ==================== -->
+  <rect x="780" y="320" width="140" height="70" rx="5" fill="#2c3e50" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="850" y="342" text-anchor="middle" fill="#f39c12" font-size="11" font-weight="bold">VL53L0X #0</text>
+  <text x="850" y="357" text-anchor="middle" fill="#ecf0f1" font-size="10">Centre (0x30)</text>
+  <text x="850" y="372" text-anchor="middle" fill="#888" font-size="9">XSHUT → Pin 22</text>
+
+  <rect x="780" y="410" width="140" height="70" rx="5" fill="#2c3e50" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="850" y="432" text-anchor="middle" fill="#f39c12" font-size="11" font-weight="bold">VL53L0X #1</text>
+  <text x="850" y="447" text-anchor="middle" fill="#ecf0f1" font-size="10">Gauche (0x31)</text>
+  <text x="850" y="462" text-anchor="middle" fill="#888" font-size="9">XSHUT → Pin 23</text>
+
+  <rect x="780" y="500" width="140" height="70" rx="5" fill="#2c3e50" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="850" y="522" text-anchor="middle" fill="#f39c12" font-size="11" font-weight="bold">VL53L0X #2</text>
+  <text x="850" y="537" text-anchor="middle" fill="#ecf0f1" font-size="10">Droite (0x32)</text>
+  <text x="850" y="552" text-anchor="middle" fill="#888" font-size="9">XSHUT → Pin 24</text>
+
+  <!-- I2C bus -->
+  <line x1="730" y1="490" x2="760" y2="490" stroke="#f39c12" stroke-width="2"/>
+  <line x1="760" y1="355" x2="760" y2="535" stroke="#f39c12" stroke-width="2"/>
+  <line x1="760" y1="355" x2="780" y2="355" stroke="#f39c12" stroke-width="1.5"/>
+  <line x1="760" y1="445" x2="780" y2="445" stroke="#f39c12" stroke-width="1.5"/>
+  <line x1="760" y1="535" x2="780" y2="535" stroke="#f39c12" stroke-width="1.5"/>
+  <text x="762" y="310" fill="#f39c12" font-size="9">SDA/SCL</text>
+
+  <!-- ==================== TCRT5000 x3 ==================== -->
+  <rect x="780" y="625" width="130" height="50" rx="5" fill="#2c3e50" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="845" y="647" text-anchor="middle" fill="#e74c3c" font-size="11" font-weight="bold">TCRT5000 FL</text>
+  <text x="845" y="663" text-anchor="middle" fill="#888" font-size="9">Avant-Gauche → A0</text>
+
+  <rect x="780" y="685" width="130" height="50" rx="5" fill="#2c3e50" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="845" y="707" text-anchor="middle" fill="#e74c3c" font-size="11" font-weight="bold">TCRT5000 FR</text>
+  <text x="845" y="723" text-anchor="middle" fill="#888" font-size="9">Avant-Droite → A1</text>
+
+  <rect x="780" y="745" width="130" height="50" rx="5" fill="#2c3e50" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="845" y="767" text-anchor="middle" fill="#e74c3c" font-size="11" font-weight="bold">TCRT5000 R</text>
+  <text x="845" y="783" text-anchor="middle" fill="#888" font-size="9">Arriere → A2</text>
+
+  <!-- TCRT signal wires -->
+  <line x1="730" y1="430" x2="750" y2="430" stroke="#e74c3c" stroke-width="1"/>
+  <line x1="750" y1="430" x2="750" y2="650" stroke="#e74c3c" stroke-width="1.5"/>
+  <line x1="750" y1="650" x2="780" y2="650" stroke="#e74c3c" stroke-width="1"/>
+  <line x1="750" y1="710" x2="780" y2="710" stroke="#e74c3c" stroke-width="1"/>
+  <line x1="750" y1="770" x2="780" y2="770" stroke="#e74c3c" stroke-width="1"/>
+
+  <!-- ==================== BOUTON START ==================== -->
+  <rect x="30" y="380" width="120" height="50" rx="5" fill="#2c3e50" stroke="#2ecc71" stroke-width="1.5"/>
+  <text x="90" y="402" text-anchor="middle" fill="#2ecc71" font-size="11" font-weight="bold">BOUTON</text>
+  <text x="90" y="418" text-anchor="middle" fill="#888" font-size="9">Pin 2 ←→ GND</text>
+  <text x="90" y="430" text-anchor="middle" fill="#666" font-size="8">Pull-up interne</text>
+  <line x1="150" y1="405" x2="250" y2="405" stroke="#2ecc71" stroke-width="1" stroke-dasharray="4,3"/>
+
+  <!-- ==================== ALIMENTATION 5V ==================== -->
+  <!-- Buck → Arduino 5V -->
+  <path d="M55,255 L55,290 L200,290 L200,565 L250,565" stroke="#2ecc71" stroke-width="2" fill="none"/>
+  <text x="120" y="285" fill="#2ecc71" font-size="9" font-weight="bold">5V</text>
+
+  <!-- GND commun -->
+  <path d="M135,255 L135,300 L210,300 L210,580 L250,580" stroke="#555" stroke-width="2" fill="none"/>
+  <text x="175" y="296" fill="#888" font-size="9">GND</text>
+
+  <!-- ==================== LEGENDE ==================== -->
+  <rect x="30" y="640" width="230" height="160" rx="6" fill="#111827" stroke="#444" stroke-width="1"/>
+  <text x="145" y="662" text-anchor="middle" fill="#ccc" font-size="12" font-weight="bold">LEGENDE</text>
+  <line x1="50" y1="678" x2="80" y2="678" stroke="#e74c3c" stroke-width="2"/>
+  <text x="90" y="682" fill="#ecf0f1" font-size="10">7.2V (batterie)</text>
+  <line x1="50" y1="698" x2="80" y2="698" stroke="#2ecc71" stroke-width="2"/>
+  <text x="90" y="702" fill="#ecf0f1" font-size="10">5V (buck)</text>
+  <line x1="50" y1="718" x2="80" y2="718" stroke="#555" stroke-width="2"/>
+  <text x="90" y="722" fill="#ecf0f1" font-size="10">GND commun</text>
+  <line x1="50" y1="738" x2="80" y2="738" stroke="#f39c12" stroke-width="2"/>
+  <text x="90" y="742" fill="#ecf0f1" font-size="10">I2C (SDA/SCL)</text>
+  <line x1="50" y1="758" x2="80" y2="758" stroke="#3498db" stroke-width="1.5"/>
+  <text x="90" y="762" fill="#ecf0f1" font-size="10">Signaux moteur</text>
+  <line x1="50" y1="778" x2="80" y2="778" stroke="#e74c3c" stroke-width="1"/>
+  <text x="90" y="782" fill="#ecf0f1" font-size="10">Signaux analogiques</text>
+
+  <!-- ==================== NOTES ==================== -->
+  <rect x="300" y="625" width="420" height="170" rx="6" fill="#111827" stroke="#444" stroke-width="1"/>
+  <text x="510" y="647" text-anchor="middle" fill="#e74c3c" font-size="12" font-weight="bold">REGLES CRITIQUES</text>
+  <text x="315" y="668" fill="#ecf0f1" font-size="10">1. JAMAIS 7.2V sur pin 5V Arduino (utiliser buck)</text>
+  <text x="315" y="686" fill="#ecf0f1" font-size="10">2. GND commun entre batterie, buck, L298N, Arduino</text>
+  <text x="315" y="704" fill="#ecf0f1" font-size="10">3. L298N: jumper 5V en place (auto-alimentation)</text>
+  <text x="315" y="722" fill="#ecf0f1" font-size="10">4. TCRT5000 sur section ANALOG du shield, PAS PWM</text>
+  <text x="315" y="740" fill="#ecf0f1" font-size="10">5. VL53L0X: tous sur meme bus I2C (SDA=20, SCL=21)</text>
+  <text x="315" y="758" fill="#ecf0f1" font-size="10">6. XSHUT par laser pour adressage sequentiel au boot</text>
+  <text x="315" y="776" fill="#ecf0f1" font-size="10">7. Shield sensor Mega: brancher sur rangees S/V/G</text>
+</svg>
