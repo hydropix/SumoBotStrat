@@ -1,0 +1,5 @@
+- [SumoBot Config & Progress](project_sumobot.md) — Hardware, simulation, strategie IA optimisee (95.2% WR), prochaine etape: porter sur Arduino
+- [Bruno Profile](user_bruno.md) — Builder profile, French speaker, methodical hardware approach
+- [Shield Sensor](feedback_shield.md) — Uses Mega sensor shield, connect via S/V/G rows
+- [Physics Model](feedback_physics.md) — Simulation must use real SI physics, no cheating (atan2 toward enemy), blind search only
+- [Optimization Results](feedback_optimization.md) — Detailed log of ALL tested strategies: what works (laser V, edge-charge) and what fails (side sensors, arc search, PD, etc.)
