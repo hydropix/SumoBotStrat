@@ -5,78 +5,210 @@
 <title>SumoBot Simulator</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0f0f1a;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'Courier New',monospace;color:#bbb;gap:16px}
-canvas{border-radius:10px}
-#panel{width:240px;height:600px;background:#16162a;border-radius:10px;padding:14px;border:1px solid #252545;overflow-y:auto}
-h2{color:#5dade2;font-size:15px;text-align:center;margin-bottom:10px}
-h3{color:#5dade2;font-size:11px;letter-spacing:1px;margin:6px 0 4px;text-transform:uppercase}
-.v{color:#2ecc71;font-size:13px}.l{color:#777;font-size:11px;margin:1px 0}
-.r{display:flex;align-items:center;gap:6px;margin:2px 0}
-.dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:bold;color:#fff}
-.sep{border-top:1px solid #252545;margin:8px 0}
-.bar{background:#1a1a30;height:6px;border-radius:3px;margin:2px 0 5px}
-.fill{height:100%;border-radius:3px;transition:width .05s}
-.sc{font-size:18px;text-align:center;margin:4px 0}
-input[type=range]{width:100%;margin:3px 0 6px;accent-color:#3498db}
-.ctr{text-align:center;margin:6px 0}
-button{background:#252545;color:#bbb;border:1px solid #353565;padding:5px 10px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;margin:2px}
+body{background:#0f0f1a;display:flex;flex-direction:column;align-items:center;min-height:100vh;font-family:'Courier New',monospace;color:#bbb;padding:16px;gap:12px}
+
+/* === TOP BAR === */
+#topbar{display:flex;align-items:center;gap:20px;background:#16162a;border-radius:10px;padding:10px 24px;border:1px solid #252545;width:832px;justify-content:space-between}
+#topbar .section{display:flex;align-items:center;gap:10px}
+#score-big{font-size:28px;font-weight:bold;letter-spacing:2px;min-width:100px;text-align:center}
+#timer-big{font-size:14px;color:#888;min-width:50px;text-align:center}
+.badge{display:inline-block;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:bold;color:#fff;letter-spacing:1px}
+button{background:#252545;color:#bbb;border:1px solid #353565;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:inherit;font-size:11px;margin:0 2px;transition:background .15s}
 button:hover{background:#353565}
-.hint{font-size:10px;color:#555;line-height:1.8;margin-top:6px}
+button.active{background:#3498db;color:#fff;border-color:#3498db}
+
+/* === MIDDLE ROW === */
+#middle{display:flex;gap:12px;align-items:flex-start}
+canvas{border-radius:10px}
+
+/* === SIDE PANEL (controls only) === */
+#panel{width:220px;background:#16162a;border-radius:10px;padding:14px;border:1px solid #252545}
+h3{color:#5dade2;font-size:11px;letter-spacing:1px;margin:8px 0 4px;text-transform:uppercase}
+h3:first-child{margin-top:0}
+.l{color:#777;font-size:11px;margin:1px 0}
+.sep{border-top:1px solid #252545;margin:10px 0}
+input[type=range]{width:100%;margin:3px 0 6px;accent-color:#3498db}
+.toggle-group{display:flex;gap:4px;margin:4px 0 8px}
+.toggle-group button{flex:1;font-size:10px;padding:4px 6px}
+.hint{font-size:10px;color:#555;line-height:1.8;margin-top:8px}
 .k{display:inline-block;background:#252545;padding:1px 4px;border-radius:2px;font-size:10px;border:1px solid #353565;margin:0 1px}
+
+/* === SHORTCUTS BAR === */
+#shortcuts{width:832px;text-align:center;font-size:10px;color:#555;letter-spacing:0.3px;padding:2px 0}
+#shortcuts .k{margin:0 2px}
+
+/* === BOTTOM TELEMETRY BAR === */
+#telemetry{display:flex;gap:0;background:#16162a;border-radius:10px;border:1px solid #252545;width:832px;overflow:hidden}
+.telem-col{flex:1;padding:10px 14px;border-right:1px solid #252545}
+.telem-col:last-child{border-right:none}
+.telem-col h4{color:#5dade2;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;opacity:0.7}
+.v{color:#2ecc71;font-size:12px}
+.r{display:flex;align-items:center;gap:6px;margin:2px 0}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bar{background:#1a1a30;height:5px;border-radius:3px;margin:2px 0 4px}
+.fill{height:100%;border-radius:3px;transition:width .05s}
+.telem-label{color:#555;font-size:10px}
+.telem-val{color:#888;font-size:11px}
+
+/* === SPECS BAR === */
+#specs{display:flex;gap:0;background:#16162a;border-radius:10px;border:1px solid #252545;width:832px;overflow:hidden}
+#specs .spec-col{flex:1;padding:10px 14px;border-right:1px solid #252545;font-size:10px;line-height:1.7}
+#specs .spec-col:last-child{border-right:none}
+#specs h4{color:#5dade2;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;opacity:0.7}
+#specs .spec-row{display:flex;gap:4px;color:#666}
+#specs .spec-key{color:#555;min-width:55px}
+#specs .spec-val{color:#8899aa}
+#specs .spec-highlight{color:#e67e22}
+#specs .spec-dim{color:#444}
 </style>
 </head>
 <body>
-<canvas id="arena" width="600" height="600"></canvas>
-<div id="panel">
-    <h2>SUMOBOT SIM</h2>
-    <h3>Etat IA</h3>
-    <span id="st" class="badge" style="background:#888">INIT</span>
-    <div class="sep"></div>
-    <h3>Lasers VL53L0X</h3>
-    <div class="r"><span class="l" style="min-width:55px">D1 (G)</span><span id="d1" class="v">---</span></div>
-    <div class="r"><span class="l" style="min-width:55px">D2 (D)</span><span id="d2" class="v">---</span></div>
-    <div class="r"><span class="l" style="min-width:55px">d1-d2</span><span id="er" class="v">---</span></div>
-    <div class="sep"></div>
-    <h3>Capteurs ligne</h3>
-    <div class="r"><span id="c0" class="dot"></span><span class="l">Avant-G (A0)</span></div>
-    <div class="r"><span id="c1" class="dot"></span><span class="l">Avant-D (A1)</span></div>
-    <div class="r"><span id="c2" class="dot"></span><span class="l">Arriere (A2)</span></div>
-    <div class="sep"></div>
-    <h3>Moteurs (PWM)</h3>
-    <div class="l">Gauche: <span id="mL">0</span></div>
-    <div class="bar"><div id="bL" class="fill"></div></div>
-    <div class="l">Droit: <span id="mR">0</span></div>
-    <div class="bar"><div id="bR" class="fill"></div></div>
-    <div class="sep"></div>
-    <h3>Physique</h3>
-    <div class="l">Vitesse: <span id="vel">0.00</span> m/s</div>
-    <div class="r"><span id="tc" class="dot"></span><span class="l">Traction</span></div>
-    <div class="sep"></div>
-    <h3>Score</h3>
-    <div id="sc" class="v sc">0 - 0</div>
-    <div class="sep"></div>
-    <h3>Reglages</h3>
-    <div class="l">Kp: <span id="kpV">0.60</span></div>
-    <input type="range" id="kpS" min="0.05" max="3" step="0.05" value="0.6">
-    <div class="l">PWM max: <span id="spdV">100</span>%</div>
-    <input type="range" id="spdS" min="20" max="100" step="5" value="100">
-    <div class="sep"></div>
-    <div class="ctr">
+<!-- ===== TOP BAR: Score, State, Timer, Controls ===== -->
+<div id="topbar">
+    <div class="section">
+        <span id="st" class="badge" style="background:#888">INIT</span>
+        <span id="et" style="color:#e74c3c;font-size:10px"></span>
+    </div>
+    <div class="section">
+        <div id="score-big"><span style="color:#3498db">0</span> - <span style="color:#e74c3c">0</span></div>
+    </div>
+    <div class="section">
+        <span id="timer-big">0:00</span>
+    </div>
+    <div class="section">
         <button id="btnReset">Reset</button>
         <button id="btnRound">Round</button>
         <button id="btnP">Pause</button>
     </div>
-    <div class="hint">
-        <span class="k">R</span> Reset
-        <span class="k">P</span> Pause
-        <span class="k">M</span> Ennemi: <span id="em">Auto</span><br>
-        <span class="k">S</span> Smart: <span id="sm">OFF</span>
-        <span id="et" style="color:#e74c3c"></span><br>
-        <span class="k">&#8593;&#8595;&#8592;&#8594;</span> Arcade
-        <span class="k">E</span><span class="k">D</span> / <span class="k">I</span><span class="k">K</span> Tank
+</div>
+
+<!-- ===== MIDDLE: Canvas + Side Panel ===== -->
+<div id="middle">
+    <canvas id="arena" width="600" height="600"></canvas>
+    <div id="panel">
+        <h3>Reglages</h3>
+        <div class="l">Kp: <span id="kpV">0.58</span></div>
+        <input type="range" id="kpS" min="0.05" max="3" step="0.05" value="0.58">
+        <div class="l">PWM max: <span id="spdV">100</span>%</div>
+        <input type="range" id="spdS" min="20" max="100" step="5" value="100">
+        <div class="sep"></div>
+        <h3>Mode Ennemi</h3>
+        <div class="toggle-group">
+            <button id="btnAuto">Auto</button>
+            <button id="btnManuel" class="active">Manuel</button>
+        </div>
+        <h3>Smart IA</h3>
+        <div class="toggle-group">
+            <button id="btnSmartOff">OFF</button>
+            <button id="btnSmartOn" class="active">ON</button>
+        </div>
+        <h3>Taille Variable</h3>
+        <div class="toggle-group">
+            <button id="btnVarOff" class="active">OFF</button>
+            <button id="btnVarOn">ON</button>
+        </div>
+        <div class="l" id="sizeLabel" style="color:#888;font-size:10px"></div>
+        <div class="sep"></div>
+        <h3>Ennemi — Masse</h3>
+        <div class="l"><span id="eneMassV">1.0</span>x (<span id="eneMassKg">0.50</span> kg)</div>
+        <input type="range" id="eneMassS" min="0.5" max="4" step="0.1" value="1.0">
+        <h3>Ennemi — Puissance</h3>
+        <div class="l"><span id="eneSpdV">1.0</span>x (<span id="eneSpdMs">0.49</span> m/s)</div>
+        <input type="range" id="eneSpdS" min="0.5" max="4" step="0.1" value="1.0">
+        <h3>Ennemi — Taille</h3>
+        <div class="l"><span id="eneSizeV">1.0</span>x (⌀<span id="eneSizeMm">110</span> mm)</div>
+        <input type="range" id="eneSizeS" min="0.5" max="2" step="0.1" value="1.0">
     </div>
 </div>
+
+<!-- ===== SHORTCUTS BAR ===== -->
+<div id="shortcuts">
+    <span class="k">R</span> Reset
+    <span class="k">P</span> Pause
+    <span class="k">M</span> Ennemi
+    <span class="k">S</span> Smart
+    <span class="k">V</span> Taille
+    <span class="k">&#8593;&#8595;&#8592;&#8594;</span> Arcade
+    <span class="k">E</span><span class="k">D</span> / <span class="k">I</span><span class="k">K</span> Tank
+</div>
+
+<!-- ===== BOTTOM TELEMETRY BAR ===== -->
+<div id="telemetry">
+    <div class="telem-col">
+        <h4>Lasers VL53L0X</h4>
+        <div class="r"><span class="telem-label" style="min-width:45px">D1 (G)</span><span id="d1" class="telem-val">---</span></div>
+        <div class="r"><span class="telem-label" style="min-width:45px">D0 (C)</span><span id="d0" class="telem-val">---</span></div>
+        <div class="r"><span class="telem-label" style="min-width:45px">D2 (D)</span><span id="d2" class="telem-val">---</span></div>
+        <div class="r"><span class="telem-label" style="min-width:45px">d1-d2</span><span id="er" class="telem-val">---</span></div>
+    </div>
+    <div class="telem-col">
+        <h4>Capteurs ligne</h4>
+        <div class="r"><span id="c0" class="dot"></span><span class="telem-label">Avant-G</span></div>
+        <div class="r"><span id="c1" class="dot"></span><span class="telem-label">Avant-D</span></div>
+        <div class="r"><span id="c2" class="dot"></span><span class="telem-label">Arriere</span></div>
+    </div>
+    <div class="telem-col">
+        <h4>Moteurs PWM</h4>
+        <div class="telem-label">G: <span id="mL">0</span></div>
+        <div class="bar"><div id="bL" class="fill"></div></div>
+        <div class="telem-label">D: <span id="mR">0</span></div>
+        <div class="bar"><div id="bR" class="fill"></div></div>
+    </div>
+    <div class="telem-col">
+        <h4>Physique</h4>
+        <div class="telem-label">Vitesse: <span id="vel">0.00</span> m/s</div>
+        <div class="r" style="margin-top:4px"><span id="tc" class="dot"></span><span class="telem-label">Traction</span></div>
+    </div>
+</div>
+
+<!-- ===== SPECS BAR ===== -->
+<div id="specs">
+    <div class="spec-col">
+        <h4>Bot — Chassis</h4>
+        <div class="spec-row"><span class="spec-key">Corps</span><span class="spec-val" id="spBotBody">--</span></div>
+        <div class="spec-row"><span class="spec-key">ColR</span><span class="spec-val" id="spBotColR">--</span></div>
+        <div class="spec-row"><span class="spec-key">Masse</span><span class="spec-val" id="spBotMass">--</span></div>
+        <div class="spec-row"><span class="spec-key">Inertie</span><span class="spec-val" id="spBotInertia">--</span></div>
+    </div>
+    <div class="spec-col">
+        <h4>Bot — Capteurs</h4>
+        <div class="spec-row"><span class="spec-key">D1 (G)</span><span class="spec-val" id="spLasD1">--</span></div>
+        <div class="spec-row"><span class="spec-key">D0 (C)</span><span class="spec-val" id="spLasD0">--</span></div>
+        <div class="spec-row"><span class="spec-key">D2 (D)</span><span class="spec-val" id="spLasD2">--</span></div>
+        <div class="spec-row"><span class="spec-key">Range</span><span class="spec-val" id="spLasRange">--</span></div>
+        <div class="spec-row"><span class="spec-key">Ligne</span><span class="spec-val" id="spLine">--</span></div>
+    </div>
+    <div class="spec-col">
+        <h4>Bot — Moteur</h4>
+        <div class="spec-row"><span class="spec-key">Vmax</span><span class="spec-val" id="spBotVmax">--</span></div>
+        <div class="spec-row"><span class="spec-key">Fstall</span><span class="spec-val" id="spBotFstall">--</span></div>
+        <div class="spec-row"><span class="spec-key">Ftrac</span><span class="spec-val" id="spBotFtrac">--</span></div>
+        <div class="spec-row"><span class="spec-key">Heading</span><span class="spec-val" id="spBotHead">--</span></div>
+        <div class="spec-row"><span class="spec-key">Pos</span><span class="spec-val" id="spBotPos">--</span></div>
+    </div>
+    <div class="spec-col">
+        <h4>IMU (MPU6050)</h4>
+        <div class="spec-row"><span class="spec-key">Accel X</span><span class="spec-val" id="spImuAx">--</span></div>
+        <div class="spec-row"><span class="spec-key">Accel Y</span><span class="spec-val" id="spImuAy">--</span></div>
+        <div class="spec-row"><span class="spec-key">Gyro Z</span><span class="spec-val" id="spImuGz">--</span></div>
+        <div class="spec-row"><span class="spec-key">Tilt</span><span class="spec-highlight" id="spTilt">--</span></div>
+        <div class="spec-row"><span class="spec-key">Heading</span><span class="spec-val" id="spImuHead">--</span></div>
+    </div>
+    <div class="spec-col">
+        <h4>Ennemi — Specs</h4>
+        <div class="spec-row"><span class="spec-key">Corps</span><span class="spec-val" id="spEneBody">--</span></div>
+        <div class="spec-row"><span class="spec-key">Masse</span><span class="spec-val" id="spEneMass">--</span></div>
+        <div class="spec-row"><span class="spec-key">Vmax</span><span class="spec-val" id="spEneVmax">--</span></div>
+        <div class="spec-row"><span class="spec-key">Fstall</span><span class="spec-val" id="spEneFstall">--</span></div>
+        <div class="spec-row"><span class="spec-key">Ftrac</span><span class="spec-val" id="spEneFtrac">--</span></div>
+        <div class="spec-row"><span class="spec-key">Ratio p</span><span class="spec-highlight" id="spRatio">--</span></div>
+    </div>
+</div>
+
+<!-- hidden compat elements -->
+<span id="em" style="display:none">Auto</span>
+<span id="sm" style="display:none">OFF</span>
+<span id="sc" style="display:none">0 - 0</span>
 <script>
 'use strict';
 
@@ -113,7 +245,8 @@ const P = {
     // Laser
     laserRange: 0.80,           // m (VL53L0X max useful range)
     laserOffY: 0.025,           // m (lateral offset of each laser from center)
-    laserAngle: 0.26,           // rad (~15°) outward splay per sensor
+    laserAngle: 0.526,          // rad (~30°) outward splay per side sensor
+    centerFill: 145,            // mm offset when center substitutes for missing side laser
 
     // Sensor positions (relative to robot center)
     lineFX: 0.047,              // front line sensor X (forward)
@@ -157,6 +290,10 @@ let eEvT, eEvD, eEvM;
 let eBehav, eBehavT, eWanderA, eOrbitDir;
 let manual = true;
 let smartMode = true;
+let varSize = false;
+let eneMassMul = 1.0;   // enemy mass multiplier (0.5x - 4x)
+let eneSpdMul = 1.0;    // enemy speed/power multiplier (0.5x - 4x)
+let eneSizeMul = 1.0;   // enemy size multiplier (0.5x - 2x)
 let sc = { b: 0, e: 0 };
 let keys = {};
 let flash = 0, lastT = 0;
@@ -164,14 +301,29 @@ let flash = 0, lastT = 0;
 // Smart enemy state
 let eSE = {};
 
+// IMU state
+let imuHeading = 0;
+let imuSearchStart = 0;
+let impactReactT = 0;
+let impactReactDir = 0;
+let tiltEscapeT = 0;
+let tiltEscapeDir = 0;
+
+// Flanking state
+let flankDir = 0;
+let flankTimer = 0;
+let counterDodgeT = 0;
+let counterDodgeDir = 0;
+
 // Tunable
-let kp = 0.6;
+let kp = 0.582;
 let spdMul = 1.0;
 
 // =============================================
 // DOM REFS
 // =============================================
 const $st = document.getElementById('st');
+const $d0 = document.getElementById('d0');
 const $d1 = document.getElementById('d1');
 const $d2 = document.getElementById('d2');
 const $er = document.getElementById('er');
@@ -184,9 +336,12 @@ const $vel = document.getElementById('vel');
 const $tc = document.getElementById('tc');
 const $sc = document.getElementById('sc');
 const $em = document.getElementById('em');
+const $scoreBig = document.getElementById('score-big');
+const $timerBig = document.getElementById('timer-big');
 
 document.getElementById('kpS').oninput = function () {
     kp = +this.value;
+    S.kp = kp;
     document.getElementById('kpV').textContent = kp.toFixed(2);
 };
 document.getElementById('spdS').oninput = function () {
@@ -196,6 +351,79 @@ document.getElementById('spdS').oninput = function () {
 document.getElementById('btnReset').onclick = function () { fullReset(); };
 document.getElementById('btnRound').onclick = function () { newRound(); };
 document.getElementById('btnP').onclick = function () { togglePause(); };
+
+// Toggle buttons for enemy mode
+const $btnAuto = document.getElementById('btnAuto');
+const $btnManuel = document.getElementById('btnManuel');
+$btnAuto.onclick = function () { manual = false; updateToggles(); };
+$btnManuel.onclick = function () { manual = true; updateToggles(); };
+
+// Toggle buttons for smart mode
+const $btnSmartOff = document.getElementById('btnSmartOff');
+const $btnSmartOn = document.getElementById('btnSmartOn');
+$btnSmartOff.onclick = function () { smartMode = false; updateToggles(); };
+$btnSmartOn.onclick = function () { smartMode = true; updateToggles(); };
+
+// Toggle buttons for variable size
+const $btnVarOff = document.getElementById('btnVarOff');
+const $btnVarOn = document.getElementById('btnVarOn');
+const $sizeLabel = document.getElementById('sizeLabel');
+$btnVarOff.onclick = function () { varSize = false; updateToggles(); };
+$btnVarOn.onclick = function () { varSize = true; updateToggles(); };
+
+// Enemy stat sliders
+document.getElementById('eneMassS').oninput = function () {
+    eneMassMul = +this.value;
+    document.getElementById('eneMassV').textContent = eneMassMul.toFixed(1);
+    document.getElementById('eneMassKg').textContent = (P.mass * eneMassMul).toFixed(2);
+    applyEneStats();
+};
+document.getElementById('eneSpdS').oninput = function () {
+    eneSpdMul = +this.value;
+    document.getElementById('eneSpdV').textContent = eneSpdMul.toFixed(1);
+    document.getElementById('eneSpdMs').textContent = (P.noLoadSpeed * eneSpdMul).toFixed(2);
+    applyEneStats();
+};
+document.getElementById('eneSizeS').oninput = function () {
+    eneSizeMul = +this.value;
+    document.getElementById('eneSizeV').textContent = eneSizeMul.toFixed(1);
+    document.getElementById('eneSizeMm').textContent = round(P.colRadius * 2 * eneSizeMul * 1000);
+    applyEneStats();
+};
+
+function applyEneStats() {
+    if (!ene) return;
+    const m = P.mass * eneMassMul;
+    const s = eneSpdMul;
+    const cr = P.colRadius * eneSizeMul;
+    ene.mass = m;
+    ene.inertia = m * (P.robotL * P.robotL + P.robotW * P.robotW) / 12;
+    ene.tractionMax = P.mu * m * P.g / 2;
+    ene.stallForce = P.stallForce * s;
+    ene.noLoadSpeed = P.noLoadSpeed * s;
+    ene.spdFactor = s;
+    ene.colR = cr;
+    updateSpecsStatic();
+}
+
+function updateToggles() {
+    $btnAuto.classList.toggle('active', !manual);
+    $btnManuel.classList.toggle('active', manual);
+    $btnSmartOff.classList.toggle('active', !smartMode);
+    $btnSmartOn.classList.toggle('active', smartMode);
+    $btnVarOff.classList.toggle('active', !varSize);
+    $btnVarOn.classList.toggle('active', varSize);
+    $em.textContent = manual ? 'Manuel' : 'Auto';
+    document.getElementById('sm').textContent = smartMode ? 'ON' : 'OFF';
+    if (ene && varSize) {
+        const sz = round((ene.colR || P.colRadius) * 2000);
+        const kg = (ene.mass || P.mass).toFixed(2);
+        const spd = round((ene.spdFactor || 1) * 100);
+        $sizeLabel.textContent = sz + 'mm | ' + kg + 'kg | ' + spd + '% vit';
+    } else {
+        $sizeLabel.textContent = '';
+    }
+}
 
 // =============================================
 // MATH HELPERS
@@ -215,8 +443,20 @@ function l2w(r, lx, ly) {
 // =============================================
 // INIT
 // =============================================
-function makeRobot(x, y, a) {
-    return { x, y, a, vx: 0, vy: 0, omega: 0, cmdL: 0, cmdR: 0, slipping: false };
+function makeRobot(x, y, a, colR, mass, spdFactor) {
+    mass = mass || P.mass;
+    spdFactor = spdFactor || 1.0;
+    return {
+        x, y, a, vx: 0, vy: 0, omega: 0, cmdL: 0, cmdR: 0, slipping: false,
+        colR: colR || P.colRadius,
+        mass,
+        inertia: mass * (P.robotL * P.robotL + P.robotW * P.robotW) / 12,
+        stallForce: P.stallForce * spdFactor,
+        noLoadSpeed: P.noLoadSpeed * spdFactor,
+        tractionMax: P.mu * mass * P.g / 2,
+        spdFactor,
+        tiltL: 0, tiltR: 0, imuAx: 0, imuAy: 0, imuGz: 0,
+    };
 }
 
 function newRound() {
@@ -226,16 +466,22 @@ function newRound() {
     const eR = 0.08 + random() * 0.06;
     const bFace = bAng + PI + (random() - 0.5) * 1.2;
     const eFace = eAng + PI + (random() - 0.5) * 1.2;
-    bot = makeRobot(cos(bAng) * bR, sin(bAng) * bR, bFace);
-    ene = makeRobot(cos(eAng) * eR, sin(eAng) * eR, eFace);
-    aiSt = 'COUNTDOWN'; eaiSt = 'COUNTDOWN';
-    cdT = 5; mTime = 0; over = false; win = ''; rTimer = 0;
+    bot = makeRobot(cos(bAng) * bR, sin(bAng) * bR, bFace, P.colRadius, P.mass, 1.0);
+    const eColR = varSize ? 0.035 + random() * 0.040 : P.colRadius * eneSizeMul;
+    const eMass = varSize ? 0.3 + random() * 0.5 : P.mass * eneMassMul;
+    const eSpd  = varSize ? 0.7 + random() * 0.6 : eneSpdMul;
+    ene = makeRobot(cos(eAng) * eR, sin(eAng) * eR, eFace, eColR, eMass, eSpd);
+    aiSt = 'SEARCH'; eaiSt = 'SEARCH'; flash = 1;
+    cdT = 0; mTime = 0; over = false; win = ''; rTimer = 0;
     evT = 0; evD = 0; evM = 'front'; crT = 0;
     eEvT = 0; eEvD = 0; eEvM = 'front';
     eBehav = 'ORBIT'; eBehavT = 2 + random() * 2;
     eWanderA = random() * TAU; eOrbitDir = random() < 0.5 ? 1 : -1;
     resetSE();
     flash = 0;
+    imuHeading = 0; imuSearchStart = 0; impactReactT = 0; tiltEscapeT = 0; tiltEscapeDir = 0;
+    flankDir = 0; flankTimer = 0; counterDodgeT = 0; counterDodgeDir = 0;
+    updateSpecsStatic();
 }
 function fullReset() { sc.b = 0; sc.e = 0; newRound(); }
 function togglePause() { paused = !paused; document.getElementById('btnP').textContent = paused ? 'Play' : 'Pause'; }
@@ -243,21 +489,28 @@ function togglePause() { paused = !paused; document.getElementById('btnP').textC
 // =============================================
 // MOTOR MODEL
 // =============================================
-function motorForce(pwm, wheelLinSpeed) {
-    // pwm: -255..255, wheelLinSpeed: m/s at wheel contact
-    // returns force in N at wheel contact
+function motorForce(pwm, wheelLinSpeed, r) {
+    const nls = r.noLoadSpeed || P.noLoadSpeed;
+    const sf = r.stallForce || P.stallForce;
     const cmdRatio = pwm / 255; // -1..1
-    const targetSpeed = cmdRatio * P.noLoadSpeed;
-    // Motor torque-speed characteristic (linear)
-    const force = P.stallForce * (targetSpeed - wheelLinSpeed) / P.noLoadSpeed;
-    return clamp(force, -P.stallForce * 2, P.stallForce * 2);
+    const targetSpeed = cmdRatio * nls;
+    const force = sf * (targetSpeed - wheelLinSpeed) / nls;
+    return clamp(force, -sf * 2, sf * 2);
 }
 
 // =============================================
 // PHYSICS ENGINE
 // =============================================
 function physicsStep(r, dt) {
+    const m = r.mass || P.mass;
+    const I = r.inertia || P.inertia;
+    const baseTm = r.tractionMax || P.tractionMax;
+    const tmL = baseTm * max(0, 1 - (r.tiltL || 0) * 1.8);
+    const tmR = baseTm * max(0, 1 - (r.tiltR || 0) * 1.8);
     const ca = cos(r.a), sa = sin(r.a);
+
+    // Store previous velocity for IMU
+    const prevVx = r.vx, prevVy = r.vy;
 
     // Velocities in robot frame
     const vFwd = r.vx * ca + r.vy * sa;
@@ -268,24 +521,25 @@ function physicsStep(r, dt) {
     const vR = vFwd - r.omega * P.wheelBase / 2;
 
     // Motor forces
-    let fL = motorForce(r.cmdL, vL);
-    let fR = motorForce(r.cmdR, vR);
+    let fL = motorForce(r.cmdL, vL, r);
+    let fR = motorForce(r.cmdR, vR, r);
 
     // Traction limit per wheel
     r.slipping = false;
-    if (abs(fL) > P.tractionMax) { fL = P.tractionMax * sign(fL); r.slipping = true; }
-    if (abs(fR) > P.tractionMax) { fR = P.tractionMax * sign(fR); r.slipping = true; }
+    if (abs(fL) > tmL) { fL = tmL * sign(fL); r.slipping = true; }
+    if (abs(fR) > tmR) { fR = tmR * sign(fR); r.slipping = true; }
 
     // Net forward force & torque
     const fFwd = fL + fR;
     const torque = (fL - fR) * P.wheelBase / 2;
 
     // Rolling resistance (opposes forward motion)
-    const fRoll = -P.rollDamping * vFwd * P.mass;
+    const fRoll = -P.rollDamping * vFwd * m;
 
     // Lateral friction (strong: wheels resist sideways sliding)
-    const latFrictionMax = P.mu * P.mass * P.g * 1.5;
-    const fLat = clamp(-P.latDamping * vLat * P.mass, -latFrictionMax, latFrictionMax);
+    const avgTilt = ((r.tiltL || 0) + (r.tiltR || 0)) / 2;
+    const latFrictionMax = P.mu * m * P.g * 1.5 * max(0, 1 - avgTilt * 1.5);
+    const fLat = clamp(-P.latDamping * vLat * m, -latFrictionMax, latFrictionMax);
 
     // Angular damping
     const tauDamp = -P.angDamping * r.omega;
@@ -296,18 +550,71 @@ function physicsStep(r, dt) {
     const fy = totalFwd * sa + fLat * ca;
 
     // Integrate
-    r.vx += (fx / P.mass) * dt;
-    r.vy += (fy / P.mass) * dt;
-    r.omega += ((torque + tauDamp) / P.inertia) * dt;
+    r.vx += (fx / m) * dt;
+    r.vy += (fy / m) * dt;
+    r.omega += ((torque + tauDamp) / I) * dt;
     r.x += r.vx * dt;
     r.y += r.vy * dt;
     r.a += r.omega * dt;
+
+    // IMU: acceleration in robot frame
+    const dvx = (r.vx - prevVx) / dt, dvy = (r.vy - prevVy) / dt;
+    r.imuAx = dvx * ca + dvy * sa;
+    r.imuAy = -dvx * sa + dvy * ca;
+    r.imuGz = r.omega;
+
+    // Tilt decay per wheel
+    if (r.tiltL) r.tiltL = max(0, r.tiltL - 3.0 * dt);
+    if (r.tiltR) r.tiltR = max(0, r.tiltR - 3.0 * dt);
+}
+
+function applyContinuousTilt(victim, attacker, dt) {
+    const dx = attacker.x - victim.x, dy = attacker.y - victim.y;
+    const dist = hypot(dx, dy);
+    const contact = (victim.colR || P.colRadius) + (attacker.colR || P.colRadius);
+    if (dist > contact * 1.2) return;
+
+    // Closing speed between the two robots
+    const nx = dx / dist, ny = dy / dist;
+
+    // Push detection: closing speed OR attacker's motors driving toward victim
+    const relVx = attacker.vx - victim.vx, relVy = attacker.vy - victim.vy;
+    const closing = -(relVx * nx + relVy * ny);
+    // Motor push: attacker heading toward victim while commanding forward
+    const attackHeadingToward = cos(attacker.a) * (-nx) + sin(attacker.a) * (-ny);
+    const motorPush = attackHeadingToward > 0.2 ? abs(attacker.cmdL + attacker.cmdR) / 510 : 0;
+    const pushStrength = max(closing, motorPush * 0.3);
+    if (pushStrength < 0.01) return;
+
+    // Where is the impact on the victim (in victim's local frame)?
+    const cv = cos(victim.a), sv = sin(victim.a);
+    const localX = nx * cv + ny * sv;   // +1 = from front, -1 = from rear
+    const localY = -nx * sv + ny * cv;  // +1 = from right, -1 = from left
+
+    // Front-to-front: reduced lift (blades partially oppose)
+    const frontBlock = localX > 0.3 ? max(0, 1 - (localX - 0.3) * 2.5) : 1; // 0.3→0.7 ramps to 0
+
+    const mv = victim.mass || P.mass;
+    const pushIntensity = clamp(pushStrength * 5, 0.2, 1.0);
+    const rampRate = pushIntensity * frontBlock * 3.5 / mv;
+
+    if (localX < -0.2) {
+        // Rear: both wheels
+        victim.tiltL = min((victim.tiltL || 0) + rampRate * dt, 0.7);
+        victim.tiltR = min((victim.tiltR || 0) + rampRate * dt, 0.7);
+    } else if (localY > 0.1) {
+        // Right side
+        victim.tiltR = min((victim.tiltR || 0) + rampRate * 1.3 * dt, 0.7);
+    } else if (localY < -0.1) {
+        // Left side
+        victim.tiltL = min((victim.tiltL || 0) + rampRate * 1.3 * dt, 0.7);
+    }
 }
 
 function resolveCollision(a, b) {
     const dx = b.x - a.x, dy = b.y - a.y;
     const dist = hypot(dx, dy);
-    const minD = P.colRadius * 2;
+    const minD = (a.colR || P.colRadius) + (b.colR || P.colRadius);
     if (dist >= minD || dist < 0.001) return;
 
     const nx = dx / dist, ny = dy / dist;
@@ -321,16 +628,19 @@ function resolveCollision(a, b) {
     const dvn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
     if (dvn <= 0) return; // already separating
 
-    // Impulse
-    const j = (1 + P.restitution) * dvn / (1 / P.mass + 1 / P.mass);
-    a.vx -= (j / P.mass) * nx;
-    a.vy -= (j / P.mass) * ny;
-    b.vx += (j / P.mass) * nx;
-    b.vy += (j / P.mass) * ny;
+    // Impulse (per-robot mass)
+    const ma = a.mass || P.mass, mb = b.mass || P.mass;
+    const j = (1 + P.restitution) * dvn / (1 / ma + 1 / mb);
+    a.vx -= (j / ma) * nx;
+    a.vy -= (j / ma) * ny;
+    b.vx += (j / mb) * nx;
+    b.vy += (j / mb) * ny;
+
+    // Tilt handled by applyContinuousTilt in physics loop
 }
 
 function isOut(r) {
-    return hypot(r.x, r.y) > P.arenaR + P.colRadius * 0.5;
+    return hypot(r.x, r.y) > P.arenaR + (r.colR || P.colRadius) * 0.5;
 }
 
 // =============================================
@@ -365,34 +675,112 @@ function rayCast(ox, oy, ang, tx, ty, tr, maxR) {
 
 function getLaser(r, tgt) {
     const hl = P.robotL / 2;
+    const tr = tgt.colR || P.colRadius;
     const lp = l2w(r, hl, -P.laserOffY);
+    const cp = l2w(r, hl, 0);
     const rp = l2w(r, hl, P.laserOffY);
     const aL = r.a - P.laserAngle; // left sensor angled outward left
+    const aC = r.a;                 // center sensor straight ahead
     const aR = r.a + P.laserAngle; // right sensor angled outward right
     return {
-        d1: rayCast(lp.x, lp.y, aL, tgt.x, tgt.y, P.colRadius, P.laserRange),
-        d2: rayCast(rp.x, rp.y, aR, tgt.x, tgt.y, P.colRadius, P.laserRange),
-        lp, rp, aL, aR
+        d0: rayCast(cp.x, cp.y, aC, tgt.x, tgt.y, tr, P.laserRange),
+        d1: rayCast(lp.x, lp.y, aL, tgt.x, tgt.y, tr, P.laserRange),
+        d2: rayCast(rp.x, rp.y, aR, tgt.x, tgt.y, tr, P.laserRange),
+        lp, cp, rp, aL, aC, aR
     };
 }
 
 // =============================================
 // BOT AI (commands in PWM, laser in mm)
 // =============================================
+// Strategy params (optimized via Monte Carlo v3)
+const S = {
+    kp: 0.582, searchPwm: 0.899, trackPwm: 0.99, chargePwm: 0.976,
+    chargeThreshold: 372, evadeFrontTime: 0.45, evadeRearTime: 0.30,
+    evadeReverseRatio: 0.45, evadePwm: 0.964, edgeSteer: 0.453,
+    centerReturnTime: 0.35, centerFill: 145,
+    flankAngle: 0.51, flankThreshold: 636, flankPwm: 0.658, flankEnabled: 1,
+    counterThresh: 18.824, counterDodgeTime: 0.212, counterPwm: 0.94,
+    tiltEscapeSpin: 0.275,
+};
+
 function botAI(dt, lr, las) {
     const maxPwm = 255 * spdMul;
+    const d0mm = las.d0 * 1000;
     const d1mm = las.d1 * 1000;
     const d2mm = las.d2 * 1000;
     const rangeMax = P.laserRange * 1000 * 0.95;
+    const det0 = d0mm < rangeMax;
+    const det1 = d1mm < rangeMax;
+    const det2 = d2mm < rangeMax;
+    const anyLaserDet = det0 || det1 || det2;
+    const eff1 = det1 ? d1mm : (det0 ? d0mm + S.centerFill : rangeMax);
+    const eff2 = det2 ? d2mm : (det0 ? d0mm + S.centerFill : rangeMax);
+
+    // === IMU behaviors ===
+    imuHeading += bot.imuGz * dt;
+
+    // Tilt escape: being lifted → reverse + spin away (direction from imuAy)
+    if (tiltEscapeT > 0) {
+        tiltEscapeT -= dt;
+        const sp = S.tiltEscapeSpin;
+        bot.cmdL = -maxPwm * (1 - sp) + tiltEscapeDir * maxPwm * sp;
+        bot.cmdR = -maxPwm * (1 - sp) - tiltEscapeDir * maxPwm * sp;
+        aiSt = 'TILT_ESC';
+        return;
+    }
+    // Detect tilt via simulated physics (proxy for MPU6050 accelZ drop on real robot)
+    const maxTilt = max(bot.tiltL || 0, bot.tiltR || 0);
+    if (maxTilt > 0.25) {
+        tiltEscapeT = 0.2 + maxTilt * 0.3;
+        // Direction from lateral IMU (available on real robot)
+        tiltEscapeDir = bot.imuAy > 0 ? 1 : -1;
+        const sp = S.tiltEscapeSpin;
+        bot.cmdL = -maxPwm * (1 - sp) + tiltEscapeDir * maxPwm * sp;
+        bot.cmdR = -maxPwm * (1 - sp) - tiltEscapeDir * maxPwm * sp;
+        aiSt = 'TILT_ESC';
+        return;
+    }
+
+    // Impact react: lateral hit → spin toward source
+    if (impactReactT > 0) {
+        impactReactT -= dt;
+        if (anyLaserDet) { impactReactT = 0; }
+        else {
+            bot.cmdL = impactReactDir * maxPwm;
+            bot.cmdR = -impactReactDir * maxPwm;
+            aiSt = 'IMPACT';
+            return;
+        }
+    }
+    if (aiSt === 'SEARCH' || aiSt === 'CENTER' || aiSt === 'TRACK') {
+        if (abs(bot.imuAy) > 15) {
+            impactReactT = 0.25;
+            impactReactDir = bot.imuAy > 0 ? 1 : -1;
+        }
+    }
+
+    // Counter-dodge: frontal collision → lateral spin dodge
+    if (counterDodgeT > 0) {
+        counterDodgeT -= dt;
+        bot.cmdL = counterDodgeDir * maxPwm * S.counterPwm;
+        bot.cmdR = -counterDodgeDir * maxPwm * S.counterPwm;
+        aiSt = 'COUNTER';
+        return;
+    }
+    if ((aiSt === 'CHARGE' || aiSt === 'TRACK') && bot.imuAx < -S.counterThresh) {
+        counterDodgeT = S.counterDodgeTime;
+        counterDodgeDir = det1 && !det2 ? -1 : det2 && !det1 ? 1 : (random() < 0.5 ? 1 : -1);
+    }
 
     // Evade active
     if (evT > 0) {
         evT -= dt;
-        const revT = evM === 'rear' ? 0.3 : 0.45 * 0.45; // evadeReverseRatio
+        const revT = evM === 'rear' ? S.evadeRearTime : S.evadeFrontTime * S.evadeReverseRatio;
         if (evM === 'rear') {
-            bot.cmdL = maxPwm * 0.85; bot.cmdR = maxPwm * 0.85;
-        } else if (evT > 0.45 - revT) {
-            bot.cmdL = -maxPwm * 0.85; bot.cmdR = -maxPwm * 0.85;
+            bot.cmdL = maxPwm * S.evadePwm; bot.cmdR = maxPwm * S.evadePwm;
+        } else if (evT > S.evadeFrontTime - revT) {
+            bot.cmdL = -maxPwm * S.evadePwm; bot.cmdR = -maxPwm * S.evadePwm;
         } else {
             bot.cmdL = evD * maxPwm * 0.8; bot.cmdR = -evD * maxPwm * 0.8;
         }
@@ -400,17 +788,14 @@ function botAI(dt, lr, las) {
         return;
     }
 
-    // Center return (after EVADE, drive toward center)
+    // Center return (after EVADE, drive forward briefly — no position needed)
     if (crT > 0) {
         crT -= dt;
         const noLine = !lr[0] && !lr[1] && !lr[2];
-        const noDet = d1mm >= rangeMax && d2mm >= rangeMax;
+        const noDet = !det0 && !det1 && !det2;
         if (noLine && noDet) {
-            const toCenter = atan2(-bot.y, -bot.x);
-            const diff = angD(bot.a, toCenter);
-            const cor = clamp(diff * 200, -maxPwm, maxPwm);
-            bot.cmdL = clamp(maxPwm * 0.7 + cor, -maxPwm, maxPwm);
-            bot.cmdR = clamp(maxPwm * 0.7 - cor, -maxPwm, maxPwm);
+            bot.cmdL = maxPwm * 0.7;
+            bot.cmdR = maxPwm * 0.7;
             aiSt = 'CENTER';
             return;
         }
@@ -419,17 +804,16 @@ function botAI(dt, lr, las) {
 
     // Line trigger
     if (lr[0] || lr[1] || lr[2]) {
-        const fwdDet = d1mm < rangeMax || d2mm < rangeMax;
+        const fwdDet = det0 || det1 || det2;
         const engaging = fwdDet && (aiSt === 'CHARGE' || aiSt === 'TRACK');
         const singleFront = (lr[0] || lr[1]) && !(lr[0] && lr[1]) && !lr[2];
 
         if (engaging && singleFront) {
-            // Pushing enemy near edge: steer away from triggered sensor, keep charging
-            const minD = min(d1mm, d2mm);
-            const err = d1mm - d2mm;
-            const cor = kp * err;
-            const base = minD < 200 ? maxPwm : maxPwm * 0.9;
-            const edgeSteer = lr[0] ? maxPwm * 0.5 : -maxPwm * 0.5;
+            const minD = min(det0 ? d0mm : 9999, det1 ? d1mm : 9999, det2 ? d2mm : 9999);
+            const err = eff1 - eff2;
+            const cor = S.kp * err;
+            const base = minD < S.chargeThreshold ? maxPwm * S.chargePwm : maxPwm * S.trackPwm;
+            const edgeSteer = lr[0] ? maxPwm * S.edgeSteer : -maxPwm * S.edgeSteer;
             bot.cmdL = clamp(base + cor + edgeSteer, -maxPwm, maxPwm);
             bot.cmdR = clamp(base - cor - edgeSteer, -maxPwm, maxPwm);
             aiSt = 'CHARGE';
@@ -437,46 +821,64 @@ function botAI(dt, lr, las) {
         }
 
         if (lr[2] && !lr[0] && !lr[1]) {
-            evT = 0.3; evM = 'rear';
+            evT = S.evadeRearTime; evM = 'rear';
         } else {
-            evT = 0.45; evM = 'front';
+            evT = S.evadeFrontTime; evM = 'front';
             evD = lr[0] && !lr[1] ? 1 : lr[1] && !lr[0] ? -1 : (random() < 0.5 ? 1 : -1);
         }
-        crT = 0.35;
+        crT = S.centerReturnTime;
         aiSt = 'EVADE';
         return;
     }
 
     if (aiSt === 'COUNTDOWN') { bot.cmdL = 0; bot.cmdR = 0; return; }
 
-    const det = d1mm < rangeMax || d2mm < rangeMax;
+    const anyDet = det0 || det1 || det2;
 
-    if (!det) {
+    if (!anyDet) {
+        if (aiSt !== 'SEARCH') imuSearchStart = imuHeading;
         aiSt = 'SEARCH';
-        const dC = hypot(bot.x, bot.y);
-        const innerR = P.arenaR - P.arenaBorder;
-        const edgeFactor = clamp((dC - innerR * 0.5) / (innerR * 0.5), 0, 1);
-        if (edgeFactor > 0.2) {
-            const toCenter = atan2(-bot.y, -bot.x);
-            const angleDiff = angD(bot.a, toCenter);
-            const turnCmd = clamp(angleDiff * 200, -maxPwm, maxPwm);
-            const fwd = maxPwm * 0.95 * 0.6 * edgeFactor;
-            bot.cmdL = fwd + turnCmd;
-            bot.cmdR = fwd - turnCmd;
+        flankTimer = 0;
+
+        // IMU-only: spin search, drive forward after full 360° scan
+        const searchedAngle = abs(imuHeading - imuSearchStart);
+        const fullScanDone = searchedAngle > TAU * 1.1;
+
+        if (fullScanDone) {
+            bot.cmdL = maxPwm * S.searchPwm * 0.7;
+            bot.cmdR = maxPwm * S.searchPwm * 0.7;
+            if (searchedAngle > TAU * 1.3) imuSearchStart = imuHeading;
         } else {
-            // Pure spin search at 95% PWM
-            bot.cmdL = maxPwm * 0.95;
-            bot.cmdR = -maxPwm * 0.95;
+            bot.cmdL = maxPwm * S.searchPwm;
+            bot.cmdR = -maxPwm * S.searchPwm;
         }
     } else {
-        const minD = min(d1mm, d2mm);
-        const err = d1mm - d2mm;
-        const cor = kp * err;
-        let base;
-        if (minD < 200) { aiSt = 'CHARGE'; base = maxPwm; }
-        else { aiSt = 'TRACK'; base = maxPwm * 0.9; }
-        bot.cmdL = clamp(base + cor, -maxPwm, maxPwm);
-        bot.cmdR = clamp(base - cor, -maxPwm, maxPwm);
+        const minD = min(det0 ? d0mm : 9999, det1 ? d1mm : 9999, det2 ? d2mm : 9999);
+        const err = eff1 - eff2;
+        const cor = S.kp * err;
+
+        // Flanking: arc approach when enemy is far (no position check — line sensors protect)
+        const shouldFlank = S.flankEnabled && minD > S.flankThreshold;
+
+        if (shouldFlank) {
+            aiSt = 'FLANK';
+            flankTimer += dt;
+            if (flankTimer < dt * 2) {
+                flankDir = det1 && !det2 ? -1 : det2 && !det1 ? 1 : (random() < 0.5 ? 1 : -1);
+            }
+            const arcOffset = flankDir * S.flankAngle;
+            const arcCor = S.kp * err + arcOffset * 150;
+            const base = maxPwm * S.flankPwm;
+            bot.cmdL = clamp(base + arcCor, -maxPwm, maxPwm);
+            bot.cmdR = clamp(base - arcCor, -maxPwm, maxPwm);
+        } else {
+            flankTimer = 0;
+            let base;
+            if (minD < S.chargeThreshold) { aiSt = 'CHARGE'; base = maxPwm * S.chargePwm; }
+            else { aiSt = 'TRACK'; base = maxPwm * S.trackPwm; }
+            bot.cmdL = clamp(base + cor, -maxPwm, maxPwm);
+            bot.cmdR = clamp(base - cor, -maxPwm, maxPwm);
+        }
     }
 }
 
@@ -493,6 +895,25 @@ function pickBehavior() {
 
 function eneAI(dt, lr) {
     const maxPwm = 255 * spdMul * 0.85;
+
+    // Manual mode: full control, no AI override
+    if (manual) {
+        eEvT = 0; // cancel any pending evade
+        ene.cmdL = 0; ene.cmdR = 0;
+        const s = maxPwm;
+        // Arcade (arrows)
+        if (keys['ArrowUp'])    { ene.cmdL += s; ene.cmdR += s; }
+        if (keys['ArrowDown'])  { ene.cmdL -= s; ene.cmdR -= s; }
+        if (keys['ArrowLeft'])  { ene.cmdL -= s * 0.5; ene.cmdR += s * 0.5; }
+        if (keys['ArrowRight']) { ene.cmdL += s * 0.5; ene.cmdR -= s * 0.5; }
+        // Tank (E/D left wheel, I/K right wheel)
+        if (keys['e'] || keys['E']) ene.cmdL += s;
+        if (keys['d'] || keys['D']) ene.cmdL -= s;
+        if (keys['i'] || keys['I']) ene.cmdR += s;
+        if (keys['k'] || keys['K']) ene.cmdR -= s;
+        eaiSt = 'MANUAL';
+        return;
+    }
 
     if (eEvT > 0) {
         eEvT -= dt;
@@ -518,23 +939,6 @@ function eneAI(dt, lr) {
     }
 
     if (eaiSt === 'COUNTDOWN') { ene.cmdL = 0; ene.cmdR = 0; return; }
-
-    if (manual) {
-        ene.cmdL = 0; ene.cmdR = 0;
-        const s = maxPwm;
-        // Arcade (arrows)
-        if (keys['ArrowUp'])    { ene.cmdL += s; ene.cmdR += s; }
-        if (keys['ArrowDown'])  { ene.cmdL -= s; ene.cmdR -= s; }
-        if (keys['ArrowLeft'])  { ene.cmdL -= s * 0.5; ene.cmdR += s * 0.5; }
-        if (keys['ArrowRight']) { ene.cmdL += s * 0.5; ene.cmdR -= s * 0.5; }
-        // Tank (E/D left wheel, I/K right wheel)
-        if (keys['e'] || keys['E']) ene.cmdL += s;
-        if (keys['d'] || keys['D']) ene.cmdL -= s;
-        if (keys['i'] || keys['I']) ene.cmdR += s;
-        if (keys['k'] || keys['K']) ene.cmdR -= s;
-        eaiSt = 'MANUAL';
-        return;
-    }
 
     eBehavT -= dt;
     if (eBehavT <= 0) pickBehavior();
@@ -785,49 +1189,125 @@ function drawArena() {
 
 function drawRobot(r, col, dark, label) {
     const px = sx(r.x), py = sy(r.y);
+    const sizeSc = (r.colR || P.colRadius) / P.colRadius;
+    const tL = r.tiltL || 0, tR = r.tiltR || 0;
+    const maxT = max(tL, tR);
+    const hl0 = RL_PX * sizeSc / 2;  // base half-length
+    const hw0 = RW_PX * sizeSc / 2;  // base half-width
+    const cp = (r.colR || P.colRadius) * SCALE;
+
+    // Perspective: lifted side = closer to camera = appears BIGGER
+    // Grounded side = farther = appears SMALLER
+    // Adjacent edges (front/back) taper from big side to small side → trapezoid
+    const p = 0.5; // perspective strength
+
+    // Each corner Y: left is negative, right is positive
+    // Lateral tilt (tL lifts left, tR lifts right):
+    //   Lifted side pushes outward, opposite side pulls inward
+    const liftL = tL * p;    // how much left expands
+    const liftR = tR * p;    // how much right expands
+    const shrinkL = tR * p * 0.6;  // right lift shrinks left
+    const shrinkR = tL * p * 0.6;  // left lift shrinks right
+
+    // Rear tilt (both wheels lift): back grows, front shrinks
+    const bothT = min(tL, tR);
+    const rearGrow  = bothT * p * 0.5;
+    const frontShrink = bothT * p * 0.4;
+
+    // 4 corners: (X, Y) in robot local frame
+    // Front edge: shrinks on both sides when rear lifts, plus lateral tilt
+    const flX = hl0 * (1 - frontShrink);
+    const flY = -hw0 * (1 + liftL - shrinkL) * (1 - frontShrink * 0.3);
+    const frX = hl0 * (1 - frontShrink);
+    const frY =  hw0 * (1 + liftR - shrinkR) * (1 - frontShrink * 0.3);
+    // Back edge: grows when rear lifts, plus lateral tilt
+    const blX = -hl0 * (1 + rearGrow);
+    const blY = -hw0 * (1 + liftL - shrinkL) * (1 + rearGrow * 0.3);
+    const brX = -hl0 * (1 + rearGrow);
+    const brY =  hw0 * (1 + liftR - shrinkR) * (1 + rearGrow * 0.3);
+
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(r.a);
 
-    const hl = RL_PX / 2, hw = RW_PX / 2;
+    // Shadow
+    const shY = (tR - tL) * 6;
+    ctx.fillStyle = 'rgba(0,0,0,' + max(0.05, 0.2 - maxT * 0.2) + ')';
+    ctx.beginPath();
+    ctx.moveTo(flX + 2, flY + 2 + shY);
+    ctx.lineTo(frX + 2, frY + 2 + shY);
+    ctx.lineTo(brX + 2, brY + 2 + shY);
+    ctx.lineTo(blX + 2, blY + 2 + shY);
+    ctx.closePath(); ctx.fill();
 
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(-hl + 2, -hw + 2, RL_PX, RW_PX);
+    // Wheels — at mid-length, each fades when its side lifts
+    const ww = 4, wh = 5;
+    const wLy = (flY + blY) / 2, wRy = (frY + brY) / 2;
+    ctx.fillStyle = tL > 0.1 ? 'rgba(17,17,17,' + max(0, 1 - tL * 2.5) + ')' : '#111';
+    ctx.fillRect(-ww, wLy - 3, ww * 2, wh);
+    ctx.fillStyle = tR > 0.1 ? 'rgba(17,17,17,' + max(0, 1 - tR * 2.5) + ')' : '#111';
+    ctx.fillRect(-ww, wRy - 2, ww * 2, wh);
 
-    // Wheels
-    ctx.fillStyle = '#111';
-    const ww = 4, wh = WB_PX * 0.15;
-    ctx.fillRect(-ww, -hw - 3, ww * 2, 5);
-    ctx.fillRect(-ww, hw - 2, ww * 2, 5);
+    // Body — perspective trapezoid with 4 independent corners
+    let bodyCol = maxT > 0.35 ? '#e74c3c' : maxT > 0.15 ? '#e67e22' : col;
+    ctx.fillStyle = bodyCol;
+    ctx.beginPath();
+    ctx.moveTo(flX, flY);
+    ctx.lineTo(frX, frY);
+    ctx.lineTo(brX, brY);
+    ctx.lineTo(blX, blY);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = maxT > 0.15 ? '#ff6b6b' : dark;
+    ctx.lineWidth = maxT > 0.15 ? 2.5 : 1.5;
+    ctx.stroke();
 
-    // Body
-    ctx.fillStyle = col;
-    ctx.fillRect(-hl, -hw, RL_PX, RW_PX);
-    ctx.strokeStyle = dark;
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(-hl, -hw, RL_PX, RW_PX);
-
-    // Blade
-    ctx.fillStyle = '#888';
-    ctx.fillRect(hl - 3, -hw - 1, 4, RW_PX + 2);
+    // Blade (front edge — follows front corners)
+    ctx.fillStyle = maxT > 0.3 ? '#cc4444' : '#888';
+    ctx.beginPath();
+    ctx.moveTo(flX, flY - 1);
+    ctx.lineTo(flX + 3, flY - 1);
+    ctx.lineTo(frX + 3, frY + 1);
+    ctx.lineTo(frX, frY + 1);
+    ctx.closePath(); ctx.fill();
 
     // Arrow
+    const fmY = (flY + frY) / 2;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
-    ctx.moveTo(hl + 1, -3); ctx.lineTo(hl + 6, 0); ctx.lineTo(hl + 1, 3);
+    ctx.moveTo(flX + 1, fmY - 3); ctx.lineTo(flX + 6, fmY); ctx.lineTo(flX + 1, fmY + 3);
     ctx.closePath(); ctx.fill();
 
     ctx.restore();
 
+    // Tilt degrees text
+    if (maxT > 0.05) {
+        ctx.save();
+        ctx.font = 'bold 9px Courier New';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillStyle = maxT > 0.3 ? '#e74c3c' : '#e67e22';
+        const tDeg = round(maxT * 180 / PI);
+        const side = tL > tR + 0.05 ? 'G' : tR > tL + 0.05 ? 'D' : 'AR';
+        ctx.fillText(side + ' ' + tDeg + '\u00b0', px, py + cp + 4);
+        ctx.restore();
+    }
+
+    // Label
     ctx.fillStyle = col;
     ctx.font = 'bold 10px Courier New';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(label, px, py - COL_PX - 4);
+    ctx.fillText(label, px, py - cp - 4);
+
+    // Impact flash
+    if (r === bot && impactReactT > 0.15) {
+        ctx.fillStyle = 'rgba(255,255,255,' + min(impactReactT * 3, 0.7) + ')';
+        ctx.beginPath(); ctx.arc(px, py, cp + 8, 0, TAU); ctx.fill();
+    }
 }
 
 function drawLasers(r, las) {
-    for (const [dk, pk, ak] of [['d1', 'lp', 'aL'], ['d2', 'rp', 'aR']]) {
+    for (const [dk, pk, ak] of [['d1', 'lp', 'aL'], ['d0', 'cp', 'aC'], ['d2', 'rp', 'aR']]) {
         const d = las[dk], p = las[pk], ang = las[ak];
         const ca = cos(ang), sa = sin(ang);
         const det = d < P.laserRange * 0.95;
@@ -890,24 +1370,109 @@ function drawOverlay() {
 }
 
 // =============================================
+// SPECS UPDATE (physical metrics)
+// =============================================
+// Static specs: called once per round (newRound)
+function updateSpecsStatic() {
+    if (!bot || !ene) return;
+    const bm = bot.mass || P.mass;
+    const bi = bot.inertia || P.inertia;
+    const bsf = bot.stallForce || P.stallForce;
+    const bnls = bot.noLoadSpeed || P.noLoadSpeed;
+    const btm = bot.tractionMax || P.tractionMax;
+    const bcr = bot.colR || P.colRadius;
+
+    const em = ene.mass || P.mass;
+    const esf = ene.stallForce || P.stallForce;
+    const enls = ene.noLoadSpeed || P.noLoadSpeed;
+    const etm = ene.tractionMax || P.tractionMax;
+    const ecr = ene.colR || P.colRadius;
+
+    // Bot chassis
+    document.getElementById('spBotBody').textContent = round(P.robotL * 1000) + '\u00d7' + round(P.robotW * 1000) + ' mm';
+    document.getElementById('spBotColR').textContent = 'r=' + round(bcr * 1000) + 'mm (\u00f8' + round(bcr * 2000) + ')';
+    document.getElementById('spBotMass').textContent = bm.toFixed(2) + ' kg';
+    document.getElementById('spBotInertia').textContent = (bi * 10000).toFixed(2) + 'e-4 kg.m\u00b2';
+
+    // Bot sensors
+    const angDeg = (P.laserAngle * 180 / PI).toFixed(1);
+    document.getElementById('spLasD1').textContent = '-' + angDeg + '\u00b0 Y=-' + round(P.laserOffY * 1000) + 'mm';
+    document.getElementById('spLasD0').textContent = '0\u00b0 Y=0 (centre)';
+    document.getElementById('spLasD2').textContent = '+' + angDeg + '\u00b0 Y=+' + round(P.laserOffY * 1000) + 'mm';
+    document.getElementById('spLasRange').textContent = round(P.laserRange * 1000) + 'mm | fill=' + S.centerFill + 'mm';
+    document.getElementById('spLine').textContent = 'AG(' + round(P.lineFX * 1000) + ',-' + round(P.lineFY * 1000) + ') AD(' + round(P.lineFX * 1000) + ',' + round(P.lineFY * 1000) + ') AR(' + round(P.lineRX * 1000) + ',0)';
+
+    // Bot motor
+    document.getElementById('spBotVmax').textContent = bnls.toFixed(3) + ' m/s';
+    document.getElementById('spBotFstall').textContent = bsf.toFixed(2) + ' N/roue';
+    document.getElementById('spBotFtrac').textContent = btm.toFixed(2) + ' N/roue' + (bsf > btm ? ' (slip!)' : '');
+
+    // Enemy specs
+    document.getElementById('spEneBody').textContent = '\u00f8' + round(ecr * 2000) + 'mm (r=' + round(ecr * 1000) + ')';
+    document.getElementById('spEneMass').textContent = em.toFixed(2) + ' kg' + (em !== bm ? ' (' + (em > bm ? '+' : '') + round((em - bm) / bm * 100) + '%)' : '');
+    document.getElementById('spEneVmax').textContent = enls.toFixed(3) + ' m/s' + (enls !== bnls ? ' (' + round(enls / bnls * 100) + '%)' : '');
+    document.getElementById('spEneFstall').textContent = esf.toFixed(2) + ' N/roue';
+    document.getElementById('spEneFtrac').textContent = etm.toFixed(2) + ' N/roue';
+
+    // Momentum ratio
+    const botMom = bm * bnls;
+    const eneMom = em * enls;
+    const ratio = (eneMom / botMom).toFixed(2);
+    const ratioEl = document.getElementById('spRatio');
+    ratioEl.textContent = ratio + '\u00d7 (' + (eneMom > botMom ? 'avantage ennemi' : 'avantage bot') + ')';
+    ratioEl.style.color = eneMom > botMom * 1.3 ? '#e74c3c' : eneMom > botMom ? '#e67e22' : '#2ecc71';
+}
+
+// Dynamic specs: heading + position + IMU, called each frame
+function updateSpecsDynamic() {
+    if (!bot) return;
+    const headDeg = (((bot.a * 180 / PI) % 360 + 360) % 360).toFixed(0);
+    document.getElementById('spBotHead').textContent = headDeg + '\u00b0 | \u03c9=' + bot.omega.toFixed(1) + ' r/s';
+    const bDist = round(hypot(bot.x, bot.y) * 1000);
+    document.getElementById('spBotPos').textContent = '(' + round(bot.x * 1000) + ',' + round(bot.y * 1000) + ') d=' + bDist + 'mm';
+
+    // IMU data
+    const ax = bot.imuAx || 0, ay = bot.imuAy || 0;
+    document.getElementById('spImuAx').textContent = ax.toFixed(1) + ' m/s\u00b2';
+    const ayEl = document.getElementById('spImuAy');
+    ayEl.textContent = ay.toFixed(1) + ' m/s\u00b2';
+    ayEl.style.color = abs(ay) > 15 ? '#e74c3c' : '#8899aa';
+    document.getElementById('spImuGz').textContent = (bot.imuGz || 0).toFixed(1) + ' rad/s';
+    const tL = bot.tiltL || 0, tR = bot.tiltR || 0;
+    const tMax = max(tL, tR);
+    const tiltEl = document.getElementById('spTilt');
+    const tLd = (tL * 180 / PI).toFixed(0), tRd = (tR * 180 / PI).toFixed(0);
+    let tiltTxt = 'G:' + tLd + '\u00b0 D:' + tRd + '\u00b0';
+    if (tMax > 0.25) tiltTxt += ' LIFTED!';
+    tiltEl.textContent = tiltTxt;
+    tiltEl.style.color = tMax > 0.25 ? '#e74c3c' : tMax > 0.1 ? '#e67e22' : '#8899aa';
+    document.getElementById('spImuHead').textContent = round(imuHeading * 180 / PI) + '\u00b0 cumul';
+}
+
+// =============================================
 // PANEL UPDATE
 // =============================================
 function updateUI(lr, las) {
-    const stCol = { COUNTDOWN: '#888', SEARCH: '#f39c12', TRACK: '#3498db', CHARGE: '#e74c3c', EVADE: '#9b59b6' };
+    const stCol = { COUNTDOWN: '#888', SEARCH: '#f39c12', TRACK: '#3498db', CHARGE: '#e74c3c', EVADE: '#9b59b6', CENTER: '#1abc9c', TILT_ESC: '#e67e22', IMPACT: '#ff6b6b', FLANK: '#8e44ad', COUNTER: '#d4ac0d' };
     $st.textContent = aiSt;
     $st.style.background = stCol[aiSt] || '#888';
 
+    const d0mm = round(las.d0 * 1000);
     const d1mm = round(las.d1 * 1000);
     const d2mm = round(las.d2 * 1000);
+    const det0 = las.d0 < P.laserRange * 0.95;
     const det1 = las.d1 < P.laserRange * 0.95;
     const det2 = las.d2 < P.laserRange * 0.95;
+    $d0.textContent = det0 ? d0mm + ' mm' : '---';
     $d1.textContent = det1 ? d1mm + ' mm' : '---';
     $d2.textContent = det2 ? d2mm + ' mm' : '---';
 
-    if (det1 && det2) {
-        const err = d1mm - d2mm;
+    if (det0 || det1 || det2) {
+        const eff1 = det1 ? d1mm : (det0 ? d0mm + S.centerFill : 760);
+        const eff2 = det2 ? d2mm : (det0 ? d0mm + S.centerFill : 760);
+        const err = round(eff1 - eff2);
         $er.textContent = err + ' mm';
-        $er.style.color = abs(err) < 20 ? '#2ecc71' : '#e67e22';
+        $er.style.color = abs(err) < 30 ? '#2ecc71' : '#e67e22';
     } else { $er.textContent = '---'; $er.style.color = '#2ecc71'; }
 
     for (let i = 0; i < 3; i++) {
@@ -928,9 +1493,12 @@ function updateUI(lr, las) {
     $tc.style.boxShadow = '0 0 4px ' + (bot.slipping ? '#e74c3c' : '#2ecc71');
 
     $sc.innerHTML = '<span style="color:#3498db">' + sc.b + '</span> - <span style="color:#e74c3c">' + sc.e + '</span>';
+    $scoreBig.innerHTML = '<span style="color:#3498db">' + sc.b + '</span> - <span style="color:#e74c3c">' + sc.e + '</span>';
+    const mins = Math.floor(mTime / 60);
+    const secs = Math.floor(mTime % 60);
+    $timerBig.textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
     $em.textContent = manual ? 'Manuel' : 'Auto';
-    document.getElementById('sm').textContent = smartMode ? 'ON' : 'OFF';
-    document.getElementById('sm').style.color = smartMode ? '#e74c3c' : '#555';
+    updateToggles();
     document.getElementById('et').textContent = smartMode ? eSE.tactic || '' : '';
 }
 
@@ -972,6 +1540,8 @@ function loop(ts) {
                 physicsStep(bot, step);
                 physicsStep(ene, step);
                 resolveCollision(bot, ene);
+                applyContinuousTilt(bot, ene, step);
+                applyContinuousTilt(ene, bot, step);
                 remaining -= step;
             }
 
@@ -991,10 +1561,29 @@ function loop(ts) {
     drawLasers(bot, bLas);
     drawRobot(bot, '#2980b9', '#1a5276', 'BOT');
     drawRobot(ene, '#c0392b', '#7b241c', 'ENNEMI');
+
+    // DEBUG: tilt values overlay
+    ctx.fillStyle = '#fff';
+    ctx.font = '11px Courier New';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    const bTL = (bot.tiltL||0), bTR = (bot.tiltR||0), eTL = (ene.tiltL||0), eTR = (ene.tiltR||0);
+    ctx.fillText('BOT tiltL=' + bTL.toFixed(3) + ' tiltR=' + bTR.toFixed(3), 8, 20);
+    ctx.fillText('ENE tiltL=' + eTL.toFixed(3) + ' tiltR=' + eTR.toFixed(3), 8, 34);
+    const dd = hypot(bot.x-ene.x, bot.y-ene.y);
+    const contact = (bot.colR||P.colRadius) + (ene.colR||P.colRadius);
+    const nnx = (ene.x-bot.x)/dd, nny = (ene.y-bot.y)/dd;
+    const clos = -((ene.vx-bot.vx)*nnx + (ene.vy-bot.vy)*nny);
+    const aht = cos(ene.a)*(-nnx) + sin(ene.a)*(-nny);
+    const mp = aht > 0.2 ? abs(ene.cmdL+ene.cmdR)/510 : 0;
+    const cv2 = cos(bot.a), sv2 = sin(bot.a);
+    const lx = nnx*cv2 + nny*sv2, ly = -nnx*sv2 + nny*cv2;
+    ctx.fillText('dist=' + dd.toFixed(3) + ' inR=' + (dd<=contact*1.2) + ' close=' + clos.toFixed(3) + ' motor=' + mp.toFixed(2), 8, 48);
+    ctx.fillText('localX=' + lx.toFixed(2) + ' localY=' + ly.toFixed(2) + ' frontBlk=' + (lx>0.3?max(0,1-(lx-0.3)*2.5):1).toFixed(2), 8, 62);
     drawLineDots(bot, bLines);
     drawLineDots(ene, eLines);
     drawOverlay();
     updateUI(bLines, bLas);
+    updateSpecsDynamic();
 
     requestAnimationFrame(loop);
 }
@@ -1008,6 +1597,7 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'p' || e.key === 'P') togglePause();
     if (e.key === 'm' || e.key === 'M') manual = !manual;
     if (e.key === 's' || e.key === 'S') { smartMode = !smartMode; }
+    if (e.key === 'v' || e.key === 'V') { varSize = !varSize; updateToggles(); }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
 });
 document.addEventListener('keyup', function (e) { keys[e.key] = false; });

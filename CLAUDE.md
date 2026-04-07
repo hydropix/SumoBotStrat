@@ -37,6 +37,20 @@ Robot sumo de compétition (catégorie 500g-1kg) basé sur Arduino Mega 2560.
 - Seuil ligne blanche : 300 (à calibrer sur ring réel)
 - PWM moteurs : 0-255 (150 = croisière, 200+ = combat)
 
+## REGLE MANDATORY — Capteurs uniquement
+L'algorithme du bot (botAI) ne doit JAMAIS utiliser d'information qui n'est pas disponible via les capteurs physiques du robot. Les seules données autorisées sont :
+- **VL53L0X x3** : distances d0 (centre), d1 (gauche), d2 (droite) en mm
+- **TCRT5000 x3** : détection ligne (booléen) avant-gauche, avant-droit, arrière
+- **MPU6050** : accélération X (avant/arrière), accélération Y (latérale), gyroscope Z (vitesse angulaire)
+- **Timers internes** : durées accumulées, heading IMU intégré
+
+Sont INTERDITS dans botAI :
+- Position absolue (x, y) du robot dans l'arène
+- Heading absolu par rapport à l'arène
+- Position ou état de l'ennemi (sauf via les lasers)
+- Tilt par roue (tiltL/tiltR) — utiliser les données IMU brutes à la place
+- Toute donnée de la simulation physique (vitesse, angle, collision)
+
 ## Câblage
 - Shield sensor Mega : brancher capteurs sur rangées S/V/G
 - Capteurs analogiques (TCRT5000) sur section ANALOG du shield, pas PWM

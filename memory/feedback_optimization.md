@@ -6,10 +6,13 @@ type: feedback
 
 ## POSITIF (garder, ne pas reverter)
 
-### Capteurs avant en V (±15°) — IMPACT MAJEUR
-- laserAngle=0.26 rad : **+3-4% WR** par rapport a paralleles
-- Sweet spot: 0.22-0.30 rad. En dessous de 0.17: peu d'effet. Au-dessus de 0.35: tracking degrade. A 0.52 (±30°): effondrement complet (63% WR).
-- Le kp doit etre reduit proportionnellement (0.6 au lieu de 0.8) pour compenser l'erreur amplifiee.
+### 3 lasers avant (centre + 2 lateraux en V) — IMPACT MAJEUR
+- Ancien: 2 lasers a ±0.26 rad, kp=0.6 → 86.9% pondere multi-taille
+- Nouveau: 3 lasers (centre droit + lateraux ±0.47 rad), kp=1.28 → **95.1% pondere** (+8.2%)
+- Le laser central comble le trou entre les lateraux. Quand il detecte mais pas un lateral, sa distance + centerFill (165mm) remplace le lateral manquant.
+- Avec le centre, on peut aller a ±27° sans degradation (ancien max etait ±17° sans centre).
+- Robustesse multi-taille : S(35mm)=94.4%, D(55mm)=95.2%, XL(75mm)=95.3%. L'ancien s'effondrait a 78% sur XL.
+- Monte Carlo v2 confirme: kp=0.6-1.3, laserAngle=0.40-0.48, centerFill=140-280 sont tous au plafond (94-95%).
 
 ### Edge-charge (ne pas EVADE sur 1 seul capteur avant pendant CHARGE) — IMPACT MAJEUR
 - **+2-3% WR, timeouts /2** (de 26% a ~13%)
