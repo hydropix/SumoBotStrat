@@ -304,16 +304,10 @@ let eSE = {};
 // IMU state
 let imuHeading = 0;
 let imuSearchStart = 0;
-let impactReactT = 0;
-let impactReactDir = 0;
-let tiltEscapeT = 0;
-let tiltEscapeDir = 0;
 
 // Flanking state
 let flankDir = 0;
 let flankTimer = 0;
-let counterDodgeT = 0;
-let counterDodgeDir = 0;
 
 // Tunable
 let kp = 0.582;
@@ -479,8 +473,8 @@ function newRound() {
     eWanderA = random() * TAU; eOrbitDir = random() < 0.5 ? 1 : -1;
     resetSE();
     flash = 0;
-    imuHeading = 0; imuSearchStart = 0; impactReactT = 0; tiltEscapeT = 0; tiltEscapeDir = 0;
-    flankDir = 0; flankTimer = 0; counterDodgeT = 0; counterDodgeDir = 0;
+    imuHeading = 0; imuSearchStart = 0;
+    flankDir = 0; flankTimer = 0;
     updateSpecsStatic();
 }
 function fullReset() { sc.b = 0; sc.e = 0; newRound(); }
@@ -700,8 +694,6 @@ const S = {
     evadeReverseRatio: 0.45, evadePwm: 0.964, edgeSteer: 0.453,
     centerReturnTime: 0.35, centerFill: 145,
     flankAngle: 0.51, flankThreshold: 636, flankPwm: 0.658, flankEnabled: 1,
-    counterThresh: 18.824, counterDodgeTime: 0.212, counterPwm: 0.94,
-    tiltEscapeSpin: 0.275,
 };
 
 function botAI(dt, lr, las) {
@@ -717,61 +709,14 @@ function botAI(dt, lr, las) {
     const eff1 = det1 ? d1mm : (det0 ? d0mm + S.centerFill : rangeMax);
     const eff2 = det2 ? d2mm : (det0 ? d0mm + S.centerFill : rangeMax);
 
-    // === IMU behaviors ===
-    imuHeading += bot.imuGz * dt;
-
-    // Tilt escape: being lifted → reverse + spin away (direction from imuAy)
-    if (tiltEscapeT > 0) {
-        tiltEscapeT -= dt;
-        const sp = S.tiltEscapeSpin;
-        bot.cmdL = -maxPwm * (1 - sp) + tiltEscapeDir * maxPwm * sp;
-        bot.cmdR = -maxPwm * (1 - sp) - tiltEscapeDir * maxPwm * sp;
-        aiSt = 'TILT_ESC';
-        return;
-    }
-    // Detect tilt via simulated physics (proxy for MPU6050 accelZ drop on real robot)
-    const maxTilt = max(bot.tiltL || 0, bot.tiltR || 0);
-    if (maxTilt > 0.25) {
-        tiltEscapeT = 0.2 + maxTilt * 0.3;
-        // Direction from lateral IMU (available on real robot)
-        tiltEscapeDir = bot.imuAy > 0 ? 1 : -1;
-        const sp = S.tiltEscapeSpin;
-        bot.cmdL = -maxPwm * (1 - sp) + tiltEscapeDir * maxPwm * sp;
-        bot.cmdR = -maxPwm * (1 - sp) - tiltEscapeDir * maxPwm * sp;
-        aiSt = 'TILT_ESC';
-        return;
-    }
-
-    // Impact react: lateral hit → spin toward source
-    if (impactReactT > 0) {
-        impactReactT -= dt;
-        if (anyLaserDet) { impactReactT = 0; }
-        else {
-            bot.cmdL = impactReactDir * maxPwm;
-            bot.cmdR = -impactReactDir * maxPwm;
-            aiSt = 'IMPACT';
-            return;
-        }
-    }
-    if (aiSt === 'SEARCH' || aiSt === 'CENTER' || aiSt === 'TRACK') {
-        if (abs(bot.imuAy) > 15) {
-            impactReactT = 0.25;
-            impactReactDir = bot.imuAy > 0 ? 1 : -1;
-        }
-    }
-
-    // Counter-dodge: frontal collision → lateral spin dodge
-    if (counterDodgeT > 0) {
-        counterDodgeT -= dt;
-        bot.cmdL = counterDodgeDir * maxPwm * S.counterPwm;
-        bot.cmdR = -counterDodgeDir * maxPwm * S.counterPwm;
-        aiSt = 'COUNTER';
-        return;
-    }
-    if ((aiSt === 'CHARGE' || aiSt === 'TRACK') && bot.imuAx < -S.counterThresh) {
-        counterDodgeT = S.counterDodgeTime;
-        counterDodgeDir = det1 && !det2 ? -1 : det2 && !det1 ? 1 : (random() < 0.5 ? 1 : -1);
-    }
+    // === IMU behaviors — DORMANT ===
+    // Ablation study showed all IMU AI behaviors are net negative in simulation:
+    //   TILT_ESC: -1.6%, IMPACT: 0%, COUNTER: 0%, search IMU: -0.7%
+    // Total IMU cost: -2.4% WR vs smart enemy.
+    // Root cause: any interruption of CHARGE costs more than it saves.
+    // May be re-evaluated on real robot where tilt = total traction loss.
+    // See memory/feedback_optimization.md for full test results.
+    imuHeading += bot.imuGz * dt; // UI display only
 
     // Evade active
     if (evT > 0) {
@@ -840,18 +785,9 @@ function botAI(dt, lr, las) {
         aiSt = 'SEARCH';
         flankTimer = 0;
 
-        // IMU-only: spin search, drive forward after full 360° scan
-        const searchedAngle = abs(imuHeading - imuSearchStart);
-        const fullScanDone = searchedAngle > TAU * 1.1;
-
-        if (fullScanDone) {
-            bot.cmdL = maxPwm * S.searchPwm * 0.7;
-            bot.cmdR = maxPwm * S.searchPwm * 0.7;
-            if (searchedAngle > TAU * 1.3) imuSearchStart = imuHeading;
-        } else {
-            bot.cmdL = maxPwm * S.searchPwm;
-            bot.cmdR = -maxPwm * S.searchPwm;
-        }
+        // Pure spin search (CW)
+        bot.cmdL = maxPwm * S.searchPwm;
+        bot.cmdR = -maxPwm * S.searchPwm;
     } else {
         const minD = min(det0 ? d0mm : 9999, det1 ? d1mm : 9999, det2 ? d2mm : 9999);
         const err = eff1 - eff2;
@@ -901,11 +837,11 @@ function eneAI(dt, lr) {
         eEvT = 0; // cancel any pending evade
         ene.cmdL = 0; ene.cmdR = 0;
         const s = maxPwm;
-        // Arcade (arrows)
-        if (keys['ArrowUp'])    { ene.cmdL += s; ene.cmdR += s; }
-        if (keys['ArrowDown'])  { ene.cmdL -= s; ene.cmdR -= s; }
-        if (keys['ArrowLeft'])  { ene.cmdL -= s * 0.5; ene.cmdR += s * 0.5; }
-        if (keys['ArrowRight']) { ene.cmdL += s * 0.5; ene.cmdR -= s * 0.5; }
+        // Arcade (arrows + AZERTY ZQSD)
+        if (keys['ArrowUp']    || keys['z'] || keys['Z']) { ene.cmdL += s; ene.cmdR += s; }
+        if (keys['ArrowDown']  || keys['s'] || keys['S']) { ene.cmdL -= s; ene.cmdR -= s; }
+        if (keys['ArrowLeft']  || keys['q'] || keys['Q']) { ene.cmdL -= s * 0.5; ene.cmdR += s * 0.5; }
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) { ene.cmdL += s * 0.5; ene.cmdR -= s * 0.5; }
         // Tank (E/D left wheel, I/K right wheel)
         if (keys['e'] || keys['E']) ene.cmdL += s;
         if (keys['d'] || keys['D']) ene.cmdL -= s;
@@ -1299,11 +1235,6 @@ function drawRobot(r, col, dark, label) {
     ctx.textBaseline = 'bottom';
     ctx.fillText(label, px, py - cp - 4);
 
-    // Impact flash
-    if (r === bot && impactReactT > 0.15) {
-        ctx.fillStyle = 'rgba(255,255,255,' + min(impactReactT * 3, 0.7) + ')';
-        ctx.beginPath(); ctx.arc(px, py, cp + 8, 0, TAU); ctx.fill();
-    }
 }
 
 function drawLasers(r, las) {
@@ -1453,7 +1384,7 @@ function updateSpecsDynamic() {
 // PANEL UPDATE
 // =============================================
 function updateUI(lr, las) {
-    const stCol = { COUNTDOWN: '#888', SEARCH: '#f39c12', TRACK: '#3498db', CHARGE: '#e74c3c', EVADE: '#9b59b6', CENTER: '#1abc9c', TILT_ESC: '#e67e22', IMPACT: '#ff6b6b', FLANK: '#8e44ad', COUNTER: '#d4ac0d' };
+    const stCol = { COUNTDOWN: '#888', SEARCH: '#f39c12', TRACK: '#3498db', CHARGE: '#e74c3c', EVADE: '#9b59b6', CENTER: '#1abc9c', FLANK: '#8e44ad' };
     $st.textContent = aiSt;
     $st.style.background = stCol[aiSt] || '#888';
 
@@ -1596,7 +1527,7 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'r' || e.key === 'R') fullReset();
     if (e.key === 'p' || e.key === 'P') togglePause();
     if (e.key === 'm' || e.key === 'M') manual = !manual;
-    if (e.key === 's' || e.key === 'S') { smartMode = !smartMode; }
+    if ((e.key === 's' || e.key === 'S') && !manual) { smartMode = !smartMode; }
     if (e.key === 'v' || e.key === 'V') { varSize = !varSize; updateToggles(); }
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
 });

@@ -44,12 +44,6 @@ const S = {
     flankThreshold:     ARGS.flankThreshold  ?? 636,   // mm: start flanking above this distance
     flankPwm:           ARGS.flankPwm        ?? 0.658, // PWM during flanking approach
     flankEnabled:       ARGS.flankEnabled    ?? 1,     // 0=disabled, 1=enabled
-    // Counter-charge params (IMU-based frontal dodge)
-    counterThresh:      ARGS.counterThresh   ?? 18.824, // IMU forward decel threshold (m/s²)
-    counterDodgeTime:   ARGS.counterDodgeTime ?? 0.212, // dodge duration (s)
-    counterPwm:         ARGS.counterPwm      ?? 0.94,   // dodge PWM
-    // Tilt escape enhancement
-    tiltEscapeSpin:     ARGS.tiltEscapeSpin  ?? 0.275,  // spin component during tilt escape (0=pure reverse, 1=full spin)
 };
 
 const ROUNDS    = ARGS.rounds   ?? 200;
@@ -59,8 +53,7 @@ const SMART_ENEMY = !!(ARGS.smart || ARGS.smartEnemy);
 const ENEMY_COL_RADIUS = ARGS.enemyColRadius ?? 0.055;
 const ENEMY_MASS = ARGS.enemyMass ?? 0.5;
 const ENEMY_SPD_FACTOR = ARGS.enemySpdFactor ?? 1.0;
-const USE_IMU = !!(ARGS.useIMU ?? true);  // IMU enabled by default
-const USE_TILT = !!(ARGS.useTilt ?? true); // tilt physics enabled by default
+const USE_TILT  = !!(ARGS.useTilt  ?? 1);  // tilt physics on/off
 
 // === PHYSICS CONFIG (SI — identical to visual sim) ===
 const P = {
@@ -249,18 +242,10 @@ let searchTimer = 0;   // time spent in SEARCH without detection
 let curSearchDir;       // current search rotation direction
 
 // IMU state
-let imuHeading = 0;        // accumulated yaw (rad)
-let imuSearchStart = 0;    // heading at start of search
-let impactReactT = 0;      // time remaining in IMPACT_REACT state
-let impactReactDir = 0;    // spin direction for impact reaction
-let tiltEscapeT = 0;       // time remaining in TILT_ESCAPE state
-let tiltEscapeDir = 0;     // spin direction during tilt escape
 
 // Flanking state
 let flankDir = 0;          // +1=arc left, -1=arc right (relative to enemy)
 let flankTimer = 0;        // time spent in current flank maneuver
-let counterDodgeT = 0;     // time remaining in counter-dodge
-let counterDodgeDir = 0;   // dodge direction
 
 function botAI(bot, ene, dt) {
     const maxPwm = 255 * S.pwmScale;
@@ -277,74 +262,11 @@ function botAI(bot, ene, dt) {
     const eff1 = det1 ? d1mm : (det0 ? d0mm + S.centerFill : rangeMax);
     const eff2 = det2 ? d2mm : (det0 ? d0mm + S.centerFill : rangeMax);
 
-    // === IMU update ===
-    if (USE_IMU) {
-        imuHeading += bot.imuGz * dt;
-
-        // --- TILT ESCAPE: being lifted → reverse + spin to escape ---
-        // Real robot: MPU6050 gives overall tilt via accel Z drop + lateral accel for side detection
-        if (tiltEscapeT > 0) {
-            tiltEscapeT -= dt;
-            const spinFactor = S.tiltEscapeSpin;
-            const rev = -maxPwm;
-            bot.cmdL = rev * (1 - spinFactor) + tiltEscapeDir * maxPwm * spinFactor;
-            bot.cmdR = rev * (1 - spinFactor) - tiltEscapeDir * maxPwm * spinFactor;
-            aiSt = 'TILT_ESC';
-            return lr;
-        }
-        // Detect tilt using IMU data available on real robot:
-        // - Forward accel (imuAx) spike + lateral accel (imuAy) indicate being pushed/lifted
-        // - accelZ < 9.0 m/s² means not fully on ground (normal = 9.81)
-        // In simulation: use tiltL/tiltR as proxy for what MPU6050 would sense
-        const maxTilt = max(bot.tiltL || 0, bot.tiltR || 0);
-        if (maxTilt > 0.25) {
-            tiltEscapeT = 0.2 + maxTilt * 0.3;
-            // Direction from lateral IMU: imuAy tells which side the force comes from
-            // (real robot would use the same imuAy reading)
-            tiltEscapeDir = bot.imuAy > 0 ? 1 : -1;
-            const spinFactor = S.tiltEscapeSpin;
-            bot.cmdL = -maxPwm * (1 - spinFactor) + tiltEscapeDir * maxPwm * spinFactor;
-            bot.cmdR = -maxPwm * (1 - spinFactor) - tiltEscapeDir * maxPwm * spinFactor;
-            aiSt = 'TILT_ESC';
-            return lr;
-        }
-
-        // --- IMPACT REACT: lateral hit detected → spin toward source ---
-        if (impactReactT > 0) {
-            impactReactT -= dt;
-            // If we now see enemy with lasers, abort react and go to TRACK
-            if (anyLaserDet) { impactReactT = 0; }
-            else {
-                bot.cmdL = impactReactDir * maxPwm;
-                bot.cmdR = -impactReactDir * maxPwm;
-                aiSt = 'IMPACT';
-                return lr;
-            }
-        }
-        // Detect lateral impact (not during EVADE/CHARGE which have their own accel)
-        if (aiSt === 'SEARCH' || aiSt === 'CENTER' || aiSt === 'TRACK') {
-            const latImpact = bot.imuAy; // positive = force from right
-            if (abs(latImpact) > 15) {   // ~1.5g lateral shock
-                impactReactT = 0.25;     // spin for 250ms toward source
-                impactReactDir = latImpact > 0 ? 1 : -1; // spin toward source
-            }
-        }
-
-        // --- COUNTER-DODGE: frontal collision detected → dodge laterally then re-engage ---
-        if (counterDodgeT > 0) {
-            counterDodgeT -= dt;
-            bot.cmdL = counterDodgeDir * maxPwm * S.counterPwm;
-            bot.cmdR = -counterDodgeDir * maxPwm * S.counterPwm;
-            aiSt = 'COUNTER';
-            return lr;
-        }
-        // Detect head-on collision (strong backward deceleration while we were charging)
-        if ((aiSt === 'CHARGE' || aiSt === 'TRACK') && bot.imuAx < -S.counterThresh) {
-            counterDodgeT = S.counterDodgeTime;
-            // Dodge to the side where enemy isn't (use last laser readings)
-            counterDodgeDir = det1 && !det2 ? -1 : det2 && !det1 ? 1 : (random() < 0.5 ? 1 : -1);
-        }
-    }
+    // === IMU behaviors — DORMANT ===
+    // Ablation study: all IMU AI behaviors are net negative in simulation (-2.4% WR).
+    // TILT_ESC: -1.6%, IMPACT: 0%, COUNTER: 0%, search IMU: -0.7%.
+    // Root cause: any CHARGE interruption costs more than it saves.
+    // May be re-evaluated on real robot where tilt = total traction loss.
 
     if (evT > 0) {
         evT -= dt;
@@ -383,7 +305,6 @@ function botAI(bot, ene, dt) {
         const singleFront = (lr[0] || lr[1]) && !(lr[0] && lr[1]) && !lr[2];
 
         if (engaging && singleFront) {
-            // Pushing enemy near edge: steer away from triggered sensor, keep charging
             const minD = min(det0 ? d0mm : 9999, det1 ? d1mm : 9999, det2 ? d2mm : 9999);
             const err = eff1 - eff2;
             const cor = S.kp * err;
@@ -408,46 +329,26 @@ function botAI(bot, ene, dt) {
 
     const anyDet = det0 || det1 || det2;
     if (!anyDet) {
-        // Track entry into SEARCH for heading-based optimization
-        if (aiSt !== 'SEARCH' && USE_IMU) { imuSearchStart = imuHeading; }
         aiSt = 'SEARCH';
-        flankTimer = 0; // reset flank state when losing target
+        flankTimer = 0;
 
-        // IMU: if we've spun >360° without finding anything → drive forward to relocate
-        // (no position knowledge — only IMU heading available on real robot)
-        const searchedAngle = USE_IMU ? abs(imuHeading - imuSearchStart) : 0;
-        const fullScanDone = searchedAngle > TAU * 1.1; // >396°
-
-        if (fullScanDone) {
-            // Full scan done: drive forward briefly to change position, then resume spin
-            // Line sensors will prevent going off the ring
-            bot.cmdL = maxPwm * S.searchPwm * 0.7;
-            bot.cmdR = maxPwm * S.searchPwm * 0.7;
-            // Reset scan counter after driving forward a bit
-            if (searchedAngle > TAU * 1.3) imuSearchStart = imuHeading;
-        } else {
-            // Pure spin search — sensor-only, no position needed
-            bot.cmdL = S.searchDir * maxPwm * S.searchPwm;
-            bot.cmdR = -S.searchDir * maxPwm * S.searchPwm;
-        }
+        // Pure spin search (CW)
+        bot.cmdL = S.searchDir * maxPwm * S.searchPwm;
+        bot.cmdR = -S.searchDir * maxPwm * S.searchPwm;
     } else {
         const minD = min(det0 ? d0mm : 9999, det1 ? d1mm : 9999, det2 ? d2mm : 9999);
         const err = eff1 - eff2;
         const cor = S.kp * err;
 
         // === FLANKING STRATEGY ===
-        // When enemy is far (> flankThreshold), arc to approach from side
-        // No position check needed — line sensors protect from going off-ring
         const shouldFlank = S.flankEnabled && minD > S.flankThreshold;
 
         if (shouldFlank) {
             aiSt = 'FLANK';
             flankTimer += dt;
-            // Pick flank direction: prefer the side where sensor sees farther (enemy edge)
             if (flankTimer < dt * 2) {
                 flankDir = det1 && !det2 ? -1 : det2 && !det1 ? 1 : (random() < 0.5 ? 1 : -1);
             }
-            // Arc: add angular offset to the tracking direction
             const arcOffset = flankDir * S.flankAngle;
             const arcCor = S.kp * err + arcOffset * 150;
             const base = maxPwm * S.flankPwm;
@@ -761,8 +662,7 @@ function runRound() {
     aiSt = 'SEARCH'; eaiSt = 'SEARCH';
     evT = 0; evD = 0; evM = 'front'; crT = 0;
     lastSeenDir = 0; searchTimer = 0; curSearchDir = S.searchDir;
-    imuHeading = 0; imuSearchStart = 0; impactReactT = 0; tiltEscapeT = 0; tiltEscapeDir = 0;
-    flankDir = 0; flankTimer = 0; counterDodgeT = 0; counterDodgeDir = 0;
+    flankDir = 0; flankTimer = 0;
     eEvT = 0; eEvD = 0; eEvM = 'front';
     eBehav = 'ORBIT'; eBehavT = 2 + random() * 2;
     eWanderA = random() * TAU; eOrbitDir = random() < 0.5 ? 1 : -1;
