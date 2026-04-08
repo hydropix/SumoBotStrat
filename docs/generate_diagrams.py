@@ -302,8 +302,8 @@ def generate_capteurs():
         ax.text(lx + 5, ly + 0.2, lab, color=TEXT_COLOR, fontsize=9, va='center', fontfamily='sans-serif')
 
     ly2 = 100
-    ax.add_patch(patches.Rectangle((2, ly2 - 1), 3.5, 2.5, facecolor='#e67e22', edgecolor='white', linewidth=0.5))
-    ax.text(7, ly2 + 0.2, "Roues silicone", color=TEXT_COLOR, fontsize=9, va='center', fontfamily='sans-serif')
+    ax.add_patch(patches.Rectangle((2, ly2 - 1), 3.5, 2.5, facecolor='#74b9ff', edgecolor='white', linewidth=0.5))
+    ax.text(7, ly2 + 0.2, "Roues silicone (x2)", color=TEXT_COLOR, fontsize=9, va='center', fontfamily='sans-serif')
     ax.add_patch(patches.Circle((32, ly2 + 0.2), 1.5, facecolor='#7f8c8d', edgecolor='white', linewidth=0.5))
     ax.text(35, ly2 + 0.2, "Bille folle (appui arriere)", color=TEXT_COLOR, fontsize=9, va='center', fontfamily='sans-serif')
 
@@ -316,13 +316,13 @@ def generate_capteurs():
                             facecolor='#2c3e50', edgecolor='#ecf0f1', linewidth=2.5)
     ax.add_patch(robot)
 
-    # Roues (4 blocs bien dans le corps, avec labels en dessous)
-    for wy in [40, 70]:
-        ax.add_patch(patches.Rectangle((17, wy - 4), 6, 8, facecolor='#e67e22', edgecolor='white', linewidth=1.2))
-        ax.add_patch(patches.Rectangle((77, wy - 4), 6, 8, facecolor='#e67e22', edgecolor='white', linewidth=1.2))
+    # Roues (2 seulement : une gauche, une droite, au milieu du chassis)
+    WHEEL_COLOR = '#74b9ff'
+    ax.add_patch(patches.Rectangle((17, 50), 6, 10, facecolor=WHEEL_COLOR, edgecolor='white', linewidth=1.2))
+    ax.add_patch(patches.Rectangle((77, 50), 6, 10, facecolor=WHEEL_COLOR, edgecolor='white', linewidth=1.2))
 
-    ax.text(20, 30, "Roue G", ha='center', color='#e67e22', fontsize=9, fontweight='bold', fontfamily='sans-serif')
-    ax.text(80, 30, "Roue D", ha='center', color='#e67e22', fontsize=9, fontweight='bold', fontfamily='sans-serif')
+    ax.text(20, 46, "Roue G", ha='center', color=WHEEL_COLOR, fontsize=9, fontweight='bold', fontfamily='sans-serif')
+    ax.text(80, 46, "Roue D", ha='center', color=WHEEL_COLOR, fontsize=9, fontweight='bold', fontfamily='sans-serif')
 
     # Bille folle
     ax.add_patch(patches.Circle((50, 25), 3, facecolor='#7f8c8d', edgecolor='white', linewidth=1.2))
