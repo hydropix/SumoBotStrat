@@ -22,7 +22,7 @@ Le simulateur reproduit fidelement la physique du robot :
 - **Capteurs** : 3x lasers VL53L0X (centre + 2 lateraux a ~30 deg), 3x TCRT5000 (ligne), IMU MPU6050
 
 Deux versions du simulateur :
-- [simulation/index.html](simulation/index.html) — Version visuelle interactive avec telemetrie temps reel, controle des parametres par sliders, et mode ennemi manuel
+- [Simulateur visuel](https://hydropix.github.io/SumoBotStrat/simulation/index.html) — Version visuelle interactive avec telemetrie temps reel, controle des parametres par sliders, et mode ennemi manuel
 - [simulation/headless.js](simulation/headless.js) — Version headless Node.js pour tests batch (`node headless.js --rounds 500`)
 
 ### Contrainte capteurs-uniquement
