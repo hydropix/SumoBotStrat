@@ -53,20 +53,7 @@ La batterie donne 7.2V, mais l'Arduino et les capteurs ont besoin de 5V. Si on b
 
 ### Branchement de l'alimentation
 
-```text
-  Batterie 7.2V
-  (+) ──────┬──────────── (+) L298N (bornier "12V")
-            │                  (alimente les moteurs)
-            │
-            └──────────── Vin du module LM2596
-                               │
-                          Vout = 5V (a regler !)
-                               │
-                               └──── Pin "5V" de l'Arduino Mega
-                                     (alimente l'Arduino et les capteurs)
-
-  (-) de la batterie ──── GND de TOUT (Arduino, L298N, LM2596)
-```
+![Schema d'alimentation](schema_alimentation.png)
 
 ### Comment regler le LM2596
 
@@ -149,18 +136,11 @@ Pin A2 (S/V/G) ──── TCRT5000 #3 (arriere)
 
 ### Ou placer les capteurs sur le robot
 
-```text
-           AVANT
-   ┌────────────────────┐
-   │ [TCRT#1]  [TCRT#2] │   Les 2 capteurs avant depassent du chassis
-   │   (A0)      (A1)   │   vers l'avant, a 5mm du sol
-   │                     │
-   │                     │
-   │      [TCRT#3]       │   Le capteur arriere est au milieu,
-   │        (A2)         │   a 5mm du sol aussi
-   └────────────────────┘
-           ARRIERE
-```
+Le placement de tous les capteurs est visible sur ce schema (vue de dessus) :
+
+![Placement des capteurs](schema_capteurs.png)
+
+Les 2 capteurs avant depassent du chassis vers l'avant, a 5mm du sol. Le capteur arriere est au milieu, a 5mm du sol aussi.
 
 ### Test et calibration
 
@@ -199,18 +179,9 @@ Chaque capteur a son fil XSHUT individuel :
   VL53L0X #2 (droite) : XSHUT ──── Pin 24
 ```
 
-### Ou placer les capteurs
+### Ou placer les capteurs laser
 
-```text
-           AVANT DU ROBOT (vue de dessus)
-
-                 ┌───┐
-                / #0  \         Laser #0 : pointe droit devant
-               /       \
-         ┌───┐           ┌───┐
-         │#1 │           │ #2│  Laser #1 et #2 : orientes a ~30 deg
-         └───┘           └───┘  de chaque cote
-```
+Le placement des lasers est visible sur le schema des capteurs plus haut. Le laser #0 pointe droit devant, les lasers #1 et #2 sont orientes a environ 30 degres de chaque cote.
 
 > **Pourquoi 30 degres et pas plus ?** On a teste avec des angles de 60 et 90 degres dans le simulateur, mais le robot perdait la cible trop souvent. A 30 degres, il gagne 8% de matchs en plus !
 
@@ -274,77 +245,11 @@ Pas besoin de resistance : l'Arduino a une resistance interne (pull-up) qui fait
 
 Voici une vue d'ensemble de tous les branchements :
 
-```text
-                   ┌─────────────────────┐
-                   │   BATTERIE NiMH     │
-                   │      7.2V           │
-                   └────┬───────┬────────┘
-                        │       │
-                   (+)  │       │  (-)
-                        │       │
-             ┌──────────┤       ├──────────────────────┐
-             │          │       │                      │
-             v          v       v                      v
-       ┌──────────┐  ┌────────────┐             ┌──────────┐
-       │  L298N   │  │  LM2596    │             │   GND    │
-       │  12V in  │  │  Vin       │             │  commun  │
-       │          │  │  Vout=5V   │             │          │
-       │ OUT1,2 ──┼──┼─> Mot. G  │             │          │
-       │ OUT3,4 ──┼──┼─> Mot. D  │             │          │
-       │          │  │            │             │          │
-       │ ENA ─────┼──┼─> Mega 10 │             │          │
-       │ IN1 ─────┼──┼─> Mega 9  │             │          │
-       │ IN2 ─────┼──┼─> Mega 8  │             │          │
-       │ IN3 ─────┼──┼─> Mega 6  │             │          │
-       │ IN4 ─────┼──┼─> Mega 7  │             │          │
-       │ ENB ─────┼──┼─> Mega 5  │             │          │
-       └──────────┘  └─────┬──────┘             │          │
-                           │ 5V                 │          │
-                           v                    │          │
-                  ┌──────────────────┐          │          │
-                  │  ARDUINO MEGA    │          │          │
-                  │  (pin 5V)        │<─────────┘          │
-                  │                  │     GND             │
-                  │  SHIELD SENSOR   │                     │
-                  │  ┌─────────────┐ │                     │
-                  │  │A0 ← TCRT #1│ │                     │
-                  │  │A1 ← TCRT #2│ │                     │
-                  │  │A2 ← TCRT #3│ │                     │
-                  │  │20 SDA ─────┼─┼──> VL53L0X x3       │
-                  │  │21 SCL ─────┼─┼──> + MPU6050        │
-                  │  │22 XSHUT #0 │ │                     │
-                  │  │23 XSHUT #1 │ │                     │
-                  │  │24 XSHUT #2 │ │                     │
-                  │  │ 2 ← BTN   │ │                     │
-                  │  │13 → LED   │ │                     │
-                  │  └─────────────┘ │                     │
-                  └──────────────────┘                     │
-                                                           │
-                   Tous les GND relies ensemble ───────────┘
-```
+![Schema de cablage complet](schema_cablage.png)
 
 ## Tableau recapitulatif : quel fil va ou
 
-| Pin de l'Arduino | Relie a quoi | Composant |
-| ---------------- | ------------ | --------- |
-| 2 | Bouton START (l'autre patte du bouton va sur GND) | Bouton poussoir |
-| 5 | ENB : vitesse du moteur droit | L298N |
-| 6 | IN3 : sens du moteur droit | L298N |
-| 7 | IN4 : sens du moteur droit | L298N |
-| 8 | IN2 : sens du moteur gauche | L298N |
-| 9 | IN1 : sens du moteur gauche | L298N |
-| 10 | ENA : vitesse du moteur gauche | L298N |
-| 13 | LED de la carte (indique l'etat du robot) | LED interne |
-| 20 (SDA) | Fil de donnees I2C | VL53L0X x3 + MPU6050 |
-| 21 (SCL) | Fil d'horloge I2C | VL53L0X x3 + MPU6050 |
-| 22 | XSHUT du laser centre | VL53L0X #0 |
-| 23 | XSHUT du laser gauche | VL53L0X #1 |
-| 24 | XSHUT du laser droite | VL53L0X #2 |
-| A0 | Capteur de ligne avant-gauche | TCRT5000 #1 |
-| A1 | Capteur de ligne avant-droit | TCRT5000 #2 |
-| A2 | Capteur de ligne arriere | TCRT5000 #3 |
-| 5V | Alimentation 5V (vient du LM2596, PAS de la batterie directement !) | LM2596 |
-| GND | Masse commune (tout le monde y est branche) | Tous |
+![Tableau du pinout](schema_pinout.png)
 
 ## Conseils importants
 
