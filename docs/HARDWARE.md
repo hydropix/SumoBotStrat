@@ -1,385 +1,385 @@
-# Guide de montage hardware — SumoBot
+# Guide de montage du robot
 
-Guide complet pour assembler le robot sumo de competition (categorie 500g-1kg) base sur Arduino Mega 2560.
+Ce guide explique comment assembler le robot sumo pas a pas. Chaque etape est testable individuellement : on branche, on teste, et on passe a la suite seulement quand ca marche.
 
-## Liste des composants
+## De quoi a-t-on besoin ?
 
-| Composant | Modele | Quantite | Role |
-| --------- | ------ | -------- | ---- |
-| Microcontroleur | Arduino Mega 2560 | 1 | Cerveau du robot |
-| Shield capteurs | Sensor Shield Mega | 1 | Distribution alimentation + connexion capteurs |
-| Pont H | L298N | 1 | Pilotage moteurs |
-| Moteurs DC | N20 12V 500RPM avec reducteur | 2 | Propulsion |
-| Roues | Roues silicone pour N20 | 2 | Adherence sur dohyo |
-| Roulette | Bille folle ou roulette omnidirectionnelle | 1 | Point d'appui arriere |
-| Capteur distance | VL53L0X (breakout) | 3 | Detection ennemi (laser ToF) |
-| Capteur ligne | TCRT5000 | 3 | Detection bordure blanche |
-| IMU | MPU6050 (breakout) | 1 | Acceleration + gyroscope |
-| Batterie | NiMH 7.2V 1100-1500mAh | 1 | Alimentation principale |
-| Regulateur | Buck LM2596 (module reglable) | 1 | Conversion 7.2V → 5V |
-| Bouton | Poussoir momentane | 1 | Demarrage match |
-| Connecteurs | JST, Dupont, bornier a vis | - | Cablage |
+### Les composants principaux
 
-## Schema d'alimentation
+| Piece | C'est quoi ? | Combien ? |
+| ----- | ------------ | --------- |
+| Arduino Mega 2560 | Le "cerveau" du robot. C'est un mini-ordinateur qu'on peut programmer | 1 |
+| Sensor Shield Mega | Une carte qui se branche sur l'Arduino pour faciliter le branchement des capteurs | 1 |
+| L298N | Un module qui permet a l'Arduino de controler les moteurs (l'Arduino seule n'est pas assez puissante) | 1 |
+| Moteurs N20 12V 500RPM | Petits moteurs avec reducteur, ils font tourner les roues | 2 |
+| Roues silicone | Roues en silicone qui accrochent bien sur le ring | 2 |
+| Bille folle | Une petite roulette qui sert de 3eme point d'appui a l'arriere | 1 |
+| VL53L0X | Capteurs laser qui mesurent la distance (pour "voir" l'adversaire) | 3 |
+| TCRT5000 | Capteurs infrarouge qui detectent la couleur du sol (noir = ring, blanc = bord) | 3 |
+| MPU6050 | Capteur qui detecte les mouvements, chocs et rotations du robot | 1 |
+| Batterie NiMH 7.2V | La batterie rechargeable qui alimente tout | 1 |
+| Module LM2596 | Un convertisseur qui transforme le 7.2V de la batterie en 5V pour l'Arduino | 1 |
+| Bouton poussoir | Pour demarrer le match | 1 |
+| Fils Dupont et connecteurs | Pour relier tous les composants entre eux | - |
 
-```text
-Batterie NiMH 7.2V
-    |
-    +---> L298N (bornier 12V) ---- alimente les moteurs directement
-    |         |
-    |         +-- Jumper 5V ENLEVE (on utilise le buck externe)
-    |
-    +---> Buck LM2596 (Vin)
-              |
-              +-- Vout regle a 5.0V (mesurer au multimetre !)
-              |
-              +---> Arduino Mega pin 5V (PAS Vin, PAS barrel jack)
-              +---> Shield capteurs (alimente VL53L0X, TCRT5000, MPU6050)
-```
+### Les outils necessaires
 
-**ATTENTION** : Ne JAMAIS brancher 7.2V sur le pin 5V de l'Arduino. Toujours passer par le buck LM2596 regle a 5.0V.
+- Un tournevis cruciforme (petit)
+- Un multimetre (pour verifier les tensions)
+- Arduino IDE installe sur un ordinateur (logiciel gratuit)
+- Un cable USB pour brancher l'Arduino a l'ordinateur
 
-### Reglage du LM2596
+## Vocabulaire utile
 
-1. Brancher la batterie sur Vin du module LM2596
-2. **Sans charge** (rien branche sur Vout), tourner le potentiometre avec un tournevis
-3. Mesurer Vout au multimetre → ajuster a 5.0V (+/- 0.1V)
-4. Brancher sur Arduino pin 5V seulement apres verification
+Avant de commencer, voici quelques mots qu'on va utiliser souvent :
 
-## Cablage moteurs — L298N
+| Mot | Signification |
+| --- | ------------- |
+| **GND** | La masse, c'est le "-" de l'alimentation. Comme le pole negatif d'une pile |
+| **VCC** ou **5V** | L'alimentation positive a 5 volts |
+| **Pin** | Une broche (patte metallique) sur l'Arduino ou un composant |
+| **PWM** | Un signal qui permet de controler la vitesse d'un moteur (au lieu de juste "allume/eteint") |
+| **I2C** | Un "langage" que les capteurs utilisent pour parler a l'Arduino a travers 2 fils (SDA et SCL) |
+| **Shield** | Une carte qui s'empile sur l'Arduino pour ajouter des fonctions |
+| **Serial Monitor** | Un ecran dans Arduino IDE qui affiche les messages du robot (utile pour le debug) |
 
-### Connexions L298N → Arduino
+## Etape 1 — L'alimentation (le courant electrique)
 
-```text
-L298N              Arduino Mega
------              -----------
-ENA  ------------> Pin 10 (PWM)     Vitesse moteur gauche
-IN1  ------------> Pin 9            Direction moteur gauche
-IN2  ------------> Pin 8            Direction moteur gauche
-IN3  ------------> Pin 6            Direction moteur droit
-IN4  ------------> Pin 7            Direction moteur droit
-ENB  ------------> Pin 5 (PWM)      Vitesse moteur droit
-GND  ------------> GND Arduino
-```
+C'est la premiere chose a faire : s'assurer que tout est bien alimente.
 
-### Connexions L298N → Moteurs
+### Le probleme
+
+La batterie donne 7.2V, mais l'Arduino et les capteurs ont besoin de 5V. Si on branche 7.2V directement, on grille tout ! Il faut donc un convertisseur (le module LM2596) qui transforme le 7.2V en 5V.
+
+### Branchement de l'alimentation
 
 ```text
-L298N              Moteurs N20
------              ----------
-OUT1, OUT2 ------> Moteur GAUCHE (2 fils)
-OUT3, OUT4 ------> Moteur DROIT (2 fils)
-12V  <------------ Batterie 7.2V (+)
-GND  <------------ Batterie 7.2V (-)
+  Batterie 7.2V
+  (+) ──────┬──────────── (+) L298N (bornier "12V")
+            │                  (alimente les moteurs)
+            │
+            └──────────── Vin du module LM2596
+                               │
+                          Vout = 5V (a regler !)
+                               │
+                               └──── Pin "5V" de l'Arduino Mega
+                                     (alimente l'Arduino et les capteurs)
+
+  (-) de la batterie ──── GND de TOUT (Arduino, L298N, LM2596)
 ```
 
-### Jumper 5V du L298N
+### Comment regler le LM2596
 
-Le L298N a un jumper "5V enable" qui active son regulateur interne. **Enlever ce jumper** car on utilise le buck LM2596 externe pour alimenter l'Arduino. Le regulateur interne du L298N n'est pas assez fiable pour alimenter le Mega + tous les capteurs.
+1. Brancher la batterie sur les bornes Vin (+) et Vin (-) du LM2596
+2. **Ne rien brancher sur la sortie pour l'instant**
+3. Mettre le multimetre sur la sortie (Vout + et Vout -)
+4. Tourner la petite vis (potentiometre) avec un tournevis jusqu'a lire **5.0V**
+5. Seulement maintenant, brancher la sortie sur le pin 5V de l'Arduino
 
-### Sens de rotation
-
-Si un moteur tourne a l'envers, il suffit d'inverser ses 2 fils sur les borniers OUT du L298N. Pas besoin de modifier le code.
+> **ATTENTION** : Ne JAMAIS brancher la batterie 7.2V directement sur le pin 5V de l'Arduino. Ca le detruit immediatement et c'est irreversible.
 
 ### Verification
 
-Utiliser le sketch `test_moteur1/test_moteur1.ino` pour tester un moteur, puis `test_2moteurs/test_2moteurs.ino` pour tester les deux moteurs ensemble (avant, arriere, rotation gauche, rotation droite).
+Brancher la batterie. L'Arduino doit s'allumer (une petite LED verte s'allume sur la carte). Si rien ne se passe, verifier les branchements et la tension du LM2596.
 
-## Cablage capteurs de ligne — TCRT5000
+## Etape 2 — Les moteurs
 
-Les TCRT5000 sont des capteurs infrarouge reflexifs. Ils renvoient une tension analogique basse sur surface blanche (bordure du dohyo) et haute sur surface noire (aire de combat).
+Les moteurs font avancer et tourner le robot. On en utilise 2 : un a gauche et un a droite. En les faisant tourner a des vitesses differentes, le robot peut tourner.
 
-### Connexions
+### Le role du L298N
 
-```text
-TCRT5000           Shield Sensor Mega (section ANALOG)
---------           ----------------------------------
-Capteur #1 (avant-gauche)  --> A0 (S/V/G)
-Capteur #2 (avant-droit)   --> A1 (S/V/G)
-Capteur #3 (arriere)       --> A2 (S/V/G)
-```
+L'Arduino ne peut pas alimenter les moteurs directement (pas assez de puissance). Le module L298N sert d'intermediaire : l'Arduino lui envoie des ordres ("tourne a gauche, vitesse 50%"), et le L298N transmet la puissance de la batterie aux moteurs.
 
-Sur le shield sensor Mega, chaque pin analogique a 3 broches alignees :
-
-- **S** (Signal) : fil de signal du TCRT5000
-- **V** (VCC) : 5V (alimente par le shield)
-- **G** (GND) : masse
-
-**IMPORTANT** : Brancher sur la section **ANALOG** du shield, pas sur la section PWM/Digital. Les deux se ressemblent, mais les pins analogiques sont sur le cote oppose.
-
-### Placement physique
+### Branchement des moteurs
 
 ```text
-        AVANT DU ROBOT
-   ┌─────────────────────┐
-   │  [TCRT#1]   [TCRT#2]│   <- Avant-gauche (A0) et avant-droit (A1)
-   │      (A0)     (A1)  │      Montes a ~5mm du sol, depassant du chassis
-   │                      │      de 5-10mm vers l'avant
-   │                      │
-   │                      │
-   │       [TCRT#3]       │   <- Arriere (A2)
-   │         (A2)         │      Monte au centre arriere
-   └─────────────────────┘
-        ARRIERE DU ROBOT
+L298N                    Arduino Mega
+─────                    ────────────
+ENA ──────────────────── Pin 10     (vitesse moteur gauche)
+IN1 ──────────────────── Pin 9      (sens moteur gauche)
+IN2 ──────────────────── Pin 8      (sens moteur gauche)
+IN3 ──────────────────── Pin 6      (sens moteur droit)
+IN4 ──────────────────── Pin 7      (sens moteur droit)
+ENB ──────────────────── Pin 5      (vitesse moteur droit)
+GND ──────────────────── GND
+
+L298N                    Moteurs
+─────                    ───────
+OUT1, OUT2 ──────────── Moteur GAUCHE (les 2 fils du moteur)
+OUT3, OUT4 ──────────── Moteur DROIT  (les 2 fils du moteur)
 ```
 
-### Calibration
+### Le jumper 5V du L298N
 
-Le seuil par defaut est 300 (sur 1023). Valeur analogique :
+Il y a un petit cavalier (jumper) sur le L298N marque "5V EN". **Il faut l'enlever.** Ce jumper active un regulateur interne qui n'est pas assez puissant pour notre robot. On utilise le LM2596 a la place.
 
-- **< 300** : surface blanche (bordure) → DANGER, reculer
-- **> 300** : surface noire (ring) → OK
+### Si un moteur tourne a l'envers
 
-Pour calibrer sur votre ring : utiliser `test_capteur_ligne/test_capteur_ligne.ino` et noter les valeurs lues sur le Serial Monitor (9600 baud) pour le blanc et le noir. Le seuil doit etre au milieu des deux valeurs.
+Pas de panique ! Il suffit d'inverser les 2 fils du moteur sur le bornier du L298N (echanger OUT1 et OUT2, ou OUT3 et OUT4).
 
-## Cablage capteurs de distance — VL53L0X
+### Test
 
-Les VL53L0X sont des capteurs laser Time-of-Flight communiquant en I2C. Portee utile : ~800mm. Le robot en utilise 3 pour couvrir un cone de detection d'environ 60 degres.
+1. Brancher l'Arduino a l'ordinateur en USB
+2. Ouvrir `test_moteur1/test_moteur1.ino` dans Arduino IDE
+3. Cliquer sur "Upload" (fleche vers la droite)
+4. Le moteur gauche doit tourner dans un sens, puis dans l'autre
+5. Ensuite, tester avec `test_2moteurs/test_2moteurs.ino` : les deux moteurs tournent ensemble (avant, arriere, tourne a gauche, tourne a droite)
 
-### Probleme d'adresse I2C
+## Etape 3 — Les capteurs de ligne (TCRT5000)
 
-Tous les VL53L0X ont la meme adresse I2C par defaut (0x29). Pour en utiliser 3 sur le meme bus, on utilise les pins XSHUT pour les allumer sequentiellement et leur attribuer des adresses uniques au demarrage.
+Ces capteurs empechent le robot de tomber du ring. Ils envoient un faisceau infrarouge vers le sol et mesurent la lumiere reflechie. Le sol noir du ring reflechit peu, mais la bordure blanche reflechit beaucoup.
 
-### Connexions
+### Branchement des capteurs de ligne
+
+On utilise le Shield Sensor, une carte qui se branche directement sur l'Arduino et qui offre des rangees de 3 broches (S, V, G) pour chaque pin :
+
+- **S** = Signal (le fil de donnees du capteur)
+- **V** = 5V (l'alimentation du capteur)
+- **G** = GND (la masse)
 
 ```text
-VL53L0X            Arduino Mega
--------            -----------
-Tous les VL53L0X :
-  VIN  ----------> 5V (via shield)
-  GND  ----------> GND
-  SDA  ----------> Pin 20 (SDA)
-  SCL  ----------> Pin 21 (SCL)
-
-XSHUT individuels :
-  VL53L0X #0 (centre)  XSHUT --> Pin 22
-  VL53L0X #1 (gauche)  XSHUT --> Pin 23
-  VL53L0X #2 (droite)  XSHUT --> Pin 24
+Shield Sensor Mega (section ANALOG)
+────────────────────────────────────
+Pin A0 (S/V/G) ──── TCRT5000 #1 (avant-gauche)
+Pin A1 (S/V/G) ──── TCRT5000 #2 (avant-droit)
+Pin A2 (S/V/G) ──── TCRT5000 #3 (arriere)
 ```
 
-### Placement physique
+> **ATTENTION** : Le shield a deux zones qui se ressemblent. Les pins analogiques (A0, A1, A2...) sont d'un cote, et les pins numeriques de l'autre. Il faut brancher sur le cote **ANALOG**.
+
+### Ou placer les capteurs sur le robot
 
 ```text
-        AVANT DU ROBOT (vue de dessus)
-              ┌───┐
-             /  0  \          Laser #0 : centre, droit devant
-            /       \
-      ┌───┐           ┌───┐
-      | 1 |           | 2 |  Laser #1 : gauche (~30 deg)
-      └───┘           └───┘  Laser #2 : droite (~30 deg)
+           AVANT
+   ┌────────────────────┐
+   │ [TCRT#1]  [TCRT#2] │   Les 2 capteurs avant depassent du chassis
+   │   (A0)      (A1)   │   vers l'avant, a 5mm du sol
+   │                     │
+   │                     │
+   │      [TCRT#3]       │   Le capteur arriere est au milieu,
+   │        (A2)         │   a 5mm du sol aussi
+   └────────────────────┘
+           ARRIERE
 ```
 
-L'angle optimal entre les lasers lateraux et le centre est **~30 degres** (0.526 rad). C'est le resultat de l'optimisation Monte Carlo — des angles plus larges (60-90 deg) perdent la cible trop facilement.
+### Test et calibration
 
-### Sequence d'initialisation
+1. Ouvrir `test_capteur_ligne/test_capteur_ligne.ino` et l'envoyer sur l'Arduino
+2. Ouvrir le Serial Monitor dans Arduino IDE (icone loupe en haut a droite, regler sur 9600 baud)
+3. Presenter une feuille blanche sous le capteur : on doit voir une valeur basse (ex: 100-200)
+4. Presenter une surface noire : la valeur doit etre haute (ex: 600-900)
+5. Le seuil par defaut est 300. Si vos valeurs sont differentes, ajustez-le dans le code
 
-Le code dans `sumo_strategy.ino` fait automatiquement :
+Ensuite, tester avec `test_ligne_moteurs/test_ligne_moteurs.ino` : le robot doit avancer et reculer automatiquement quand il detecte du blanc.
 
-1. Mettre les 3 XSHUT a LOW (tous les capteurs eteints)
-2. Activer XSHUT #0 → init laser0 → adresse 0x30
-3. Activer XSHUT #1 → init laser1 → adresse 0x31
-4. Activer XSHUT #2 → init laser2 → adresse 0x32
-5. Mode continu a 20ms par mesure (rapide)
+## Etape 4 — Les capteurs de distance (VL53L0X)
 
-### Recovery I2C
+Ce sont les "yeux" du robot. Ils envoient un faisceau laser invisible et mesurent le temps que met la lumiere a revenir, ce qui donne la distance d'un objet (ici, l'adversaire). Portee : environ 80 cm.
 
-Si les 3 lasers tombent en timeout simultanement (bus I2C bloque), le code execute un recovery automatique : 16 clocks manuelles sur SCL puis reinitialisation complete.
+Le robot en utilise 3 : un qui regarde droit devant, et deux sur les cotes (a environ 30 degres). Ca lui donne un "champ de vision" de 60 degres.
 
-## Cablage IMU — MPU6050
+### Le probleme : ils ont tous la meme adresse
 
-Le MPU6050 fournit les accelerations (chocs, soulèvement) et le gyroscope (rotation). Il partage le bus I2C avec les VL53L0X.
+Les VL53L0X communiquent avec l'Arduino par un systeme appele I2C (2 fils partages : SDA et SCL). Le probleme, c'est qu'ils ont tous la meme "adresse" par defaut. C'est comme si 3 eleves dans une classe avaient le meme prenom : quand le prof appelle, ils repondent tous en meme temps !
 
-### Connexions
+La solution : chaque capteur a un fil special (XSHUT) qui permet de l'allumer ou l'eteindre. Au demarrage, le code allume les capteurs un par un et donne a chacun une adresse differente.
+
+### Branchement des lasers
 
 ```text
-MPU6050            Arduino Mega
--------            -----------
-VCC  ------------> 5V (via shield)
-GND  ------------> GND
-SDA  ------------> Pin 20 (SDA)
-SCL  ------------> Pin 21 (SCL)
-AD0  ------------> GND (adresse 0x68, pas de conflit avec VL53L0X)
+Les 3 VL53L0X partagent les memes fils I2C :
+  VIN ──── 5V (via le shield)
+  GND ──── GND
+  SDA ──── Pin 20 (sur l'Arduino Mega, c'est le fil de donnees I2C)
+  SCL ──── Pin 21 (c'est le fil d'horloge I2C)
+
+Chaque capteur a son fil XSHUT individuel :
+  VL53L0X #0 (centre) : XSHUT ──── Pin 22
+  VL53L0X #1 (gauche) : XSHUT ──── Pin 23
+  VL53L0X #2 (droite) : XSHUT ──── Pin 24
 ```
 
-### Donnees utilisees par l'IA
-
-| Donnee MPU6050 | Utilisation |
-| -------------- | ----------- |
-| Acceleration X (avant/arriere) | Detection collision frontale (counter-dodge si < -18.8 m/s2) |
-| Acceleration Y (laterale) | Detection impact lateral (spin si \|ay\| > 15 m/s2), direction de tilt |
-| Gyroscope Z (vitesse angulaire) | Integration heading pour scan 360 deg en mode SEARCH |
-
-## Bouton START
-
-### Connexion
+### Ou placer les capteurs
 
 ```text
-Bouton             Arduino Mega
-------             -----------
-Broche 1 --------> Pin 2
-Broche 2 --------> GND
+           AVANT DU ROBOT (vue de dessus)
+
+                 ┌───┐
+                / #0  \         Laser #0 : pointe droit devant
+               /       \
+         ┌───┐           ┌───┐
+         │#1 │           │ #2│  Laser #1 et #2 : orientes a ~30 deg
+         └───┘           └───┘  de chaque cote
 ```
 
-Le pin 2 utilise le pull-up interne de l'Arduino (`INPUT_PULLUP`). Pas besoin de resistance externe. Le bouton est lu comme LOW quand presse.
+> **Pourquoi 30 degres et pas plus ?** On a teste avec des angles de 60 et 90 degres dans le simulateur, mais le robot perdait la cible trop souvent. A 30 degres, il gagne 8% de matchs en plus !
 
-### Fonctionnement
+### Test
 
-1. Robot sous tension → etat WAIT_START (LED clignote lentement)
-2. Appui bouton → COUNTDOWN 5 secondes (LED clignote rapidement, reglementaire)
-3. Fin countdown → GO, l'IA demarre en mode SEARCH
+Apres le branchement, envoyer le code principal (`sumo_strategy/sumo_strategy.ino`) et ouvrir le Serial Monitor. Au demarrage, le message "Lasers OK" doit apparaitre. Si vous voyez "ERR laser0" (ou 1 ou 2), verifier le cablage du capteur concerne.
+
+## Etape 5 — L'accelerometre/gyroscope (MPU6050)
+
+Ce capteur detecte les mouvements du robot : les chocs, les rotations, et meme si le robot est souleve par l'adversaire. C'est un peu comme l'oreille interne chez l'humain, qui nous donne le sens de l'equilibre.
+
+### Branchement de l'IMU
+
+Le MPU6050 partage les memes fils I2C que les capteurs laser (SDA et SCL), mais avec une adresse differente, donc pas de conflit.
+
+```text
+MPU6050              Arduino Mega
+───────              ────────────
+VCC ──────────────── 5V (via le shield)
+GND ──────────────── GND
+SDA ──────────────── Pin 20 (meme fil que les VL53L0X)
+SCL ──────────────── Pin 21 (meme fil que les VL53L0X)
+AD0 ──────────────── GND (ca fixe son adresse pour eviter les conflits)
+```
+
+### Ce que le robot en fait
+
+| Mesure | Le robot l'utilise pour... |
+| ------ | ------------------------- |
+| Acceleration avant/arriere | Detecter une collision frontale et esquiver sur le cote |
+| Acceleration laterale | Detecter un choc sur le cote et tourner vers l'attaquant |
+| Vitesse de rotation | Savoir quand il a fait un tour complet en mode recherche |
+
+### Placement de l'IMU
+
+Monter le MPU6050 **au centre du robot**, bien fixe. S'il vibre trop, les mesures seront fausses. Utiliser du scotch double-face epais ou de la mousse pour l'isoler des vibrations.
+
+## Etape 6 — Le bouton de demarrage
+
+En competition, on doit appuyer sur un bouton, puis le robot attend 5 secondes avant de commencer (c'est la regle). Ce bouton declenche le compte a rebours.
+
+### Branchement du bouton
+
+C'est le branchement le plus simple du projet :
+
+```text
+Bouton poussoir
+  Broche 1 ──── Pin 2 de l'Arduino
+  Broche 2 ──── GND
+```
+
+Pas besoin de resistance : l'Arduino a une resistance interne (pull-up) qui fait le travail.
+
+### Comment ca marche
+
+1. Robot allume → la LED de l'Arduino clignote **lentement** (il attend)
+2. Appui sur le bouton → la LED clignote **vite** (compte a rebours de 5 secondes)
+3. Fin du compte a rebours → le robot demarre et cherche l'ennemi
 
 ## Schema de cablage complet
 
+Voici une vue d'ensemble de tous les branchements :
+
 ```text
-                    ┌─────────────────────┐
-                    │   BATTERIE NiMH     │
-                    │      7.2V           │
-                    └────┬───────┬────────┘
-                         │       │
-                    (+)  │       │  (-)
-                         │       │
-              ┌──────────┤       ├──────────────────────┐
-              │          │       │                      │
-              v          v       v                      v
-        ┌──────────┐  ┌────────────┐             ┌──────────┐
-        │  L298N   │  │  LM2596    │             │   GND    │
-        │  12V in  │  │  Vin       │             │  commun  │
-        │          │  │  Vout=5V   │             │          │
-        │ OUT1,2 ──┼──┼─> Mot. G  │             │          │
-        │ OUT3,4 ──┼──┼─> Mot. D  │             │          │
-        │          │  │            │             │          │
-        │ ENA ─────┼──┼─> Mega 10 │             │          │
-        │ IN1 ─────┼──┼─> Mega 9  │             │          │
-        │ IN2 ─────┼──┼─> Mega 8  │             │          │
-        │ IN3 ─────┼──┼─> Mega 6  │             │          │
-        │ IN4 ─────┼──┼─> Mega 7  │             │          │
-        │ ENB ─────┼──┼─> Mega 5  │             │          │
-        └──────────┘  └─────┬──────┘             │          │
-                            │ 5V                 │          │
-                            v                    │          │
-                   ┌──────────────────┐          │          │
-                   │  ARDUINO MEGA    │          │          │
-                   │  (pin 5V)        │<─────────┘          │
-                   │                  │     GND             │
-                   │  SHIELD SENSOR   │                     │
-                   │  ┌─────────────┐ │                     │
-                   │  │A0 ← TCRT #1│ │                     │
-                   │  │A1 ← TCRT #2│ │                     │
-                   │  │A2 ← TCRT #3│ │                     │
-                   │  │20 SDA ─────┼─┼──> VL53L0X x3       │
-                   │  │21 SCL ─────┼─┼──> + MPU6050        │
-                   │  │22 XSHUT #0 │ │                     │
-                   │  │23 XSHUT #1 │ │                     │
-                   │  │24 XSHUT #2 │ │                     │
-                   │  │ 2 ← BTN   │ │                     │
-                   │  │13 → LED   │ │                     │
-                   │  └─────────────┘ │                     │
-                   └──────────────────┘                     │
-                                                            │
-                    Tous les GND relies ensemble ───────────┘
+                   ┌─────────────────────┐
+                   │   BATTERIE NiMH     │
+                   │      7.2V           │
+                   └────┬───────┬────────┘
+                        │       │
+                   (+)  │       │  (-)
+                        │       │
+             ┌──────────┤       ├──────────────────────┐
+             │          │       │                      │
+             v          v       v                      v
+       ┌──────────┐  ┌────────────┐             ┌──────────┐
+       │  L298N   │  │  LM2596    │             │   GND    │
+       │  12V in  │  │  Vin       │             │  commun  │
+       │          │  │  Vout=5V   │             │          │
+       │ OUT1,2 ──┼──┼─> Mot. G  │             │          │
+       │ OUT3,4 ──┼──┼─> Mot. D  │             │          │
+       │          │  │            │             │          │
+       │ ENA ─────┼──┼─> Mega 10 │             │          │
+       │ IN1 ─────┼──┼─> Mega 9  │             │          │
+       │ IN2 ─────┼──┼─> Mega 8  │             │          │
+       │ IN3 ─────┼──┼─> Mega 6  │             │          │
+       │ IN4 ─────┼──┼─> Mega 7  │             │          │
+       │ ENB ─────┼──┼─> Mega 5  │             │          │
+       └──────────┘  └─────┬──────┘             │          │
+                           │ 5V                 │          │
+                           v                    │          │
+                  ┌──────────────────┐          │          │
+                  │  ARDUINO MEGA    │          │          │
+                  │  (pin 5V)        │<─────────┘          │
+                  │                  │     GND             │
+                  │  SHIELD SENSOR   │                     │
+                  │  ┌─────────────┐ │                     │
+                  │  │A0 ← TCRT #1│ │                     │
+                  │  │A1 ← TCRT #2│ │                     │
+                  │  │A2 ← TCRT #3│ │                     │
+                  │  │20 SDA ─────┼─┼──> VL53L0X x3       │
+                  │  │21 SCL ─────┼─┼──> + MPU6050        │
+                  │  │22 XSHUT #0 │ │                     │
+                  │  │23 XSHUT #1 │ │                     │
+                  │  │24 XSHUT #2 │ │                     │
+                  │  │ 2 ← BTN   │ │                     │
+                  │  │13 → LED   │ │                     │
+                  │  └─────────────┘ │                     │
+                  └──────────────────┘                     │
+                                                           │
+                   Tous les GND relies ensemble ───────────┘
 ```
 
-## Tableau recapitulatif du pinout
+## Tableau recapitulatif : quel fil va ou
 
-| Pin Arduino | Fonction | Composant |
-| ----------- | -------- | --------- |
-| 2 | Bouton START | Poussoir → GND |
-| 5 | ENB (PWM moteur droit) | L298N |
-| 6 | IN3 (direction moteur droit) | L298N |
-| 7 | IN4 (direction moteur droit) | L298N |
-| 8 | IN2 (direction moteur gauche) | L298N |
-| 9 | IN1 (direction moteur gauche) | L298N |
-| 10 | ENA (PWM moteur gauche) | L298N |
-| 13 | LED etat | LED onboard |
-| 20 (SDA) | Bus I2C data | VL53L0X x3 + MPU6050 |
-| 21 (SCL) | Bus I2C clock | VL53L0X x3 + MPU6050 |
-| 22 | XSHUT laser centre | VL53L0X #0 |
-| 23 | XSHUT laser gauche | VL53L0X #1 |
-| 24 | XSHUT laser droite | VL53L0X #2 |
-| A0 | Capteur ligne avant-gauche | TCRT5000 #1 |
-| A1 | Capteur ligne avant-droit | TCRT5000 #2 |
-| A2 | Capteur ligne arriere | TCRT5000 #3 |
-| 5V | Alimentation 5V (depuis buck) | LM2596 Vout |
-| GND | Masse commune | Tous composants |
+| Pin de l'Arduino | Relie a quoi | Composant |
+| ---------------- | ------------ | --------- |
+| 2 | Bouton START (l'autre patte du bouton va sur GND) | Bouton poussoir |
+| 5 | ENB : vitesse du moteur droit | L298N |
+| 6 | IN3 : sens du moteur droit | L298N |
+| 7 | IN4 : sens du moteur droit | L298N |
+| 8 | IN2 : sens du moteur gauche | L298N |
+| 9 | IN1 : sens du moteur gauche | L298N |
+| 10 | ENA : vitesse du moteur gauche | L298N |
+| 13 | LED de la carte (indique l'etat du robot) | LED interne |
+| 20 (SDA) | Fil de donnees I2C | VL53L0X x3 + MPU6050 |
+| 21 (SCL) | Fil d'horloge I2C | VL53L0X x3 + MPU6050 |
+| 22 | XSHUT du laser centre | VL53L0X #0 |
+| 23 | XSHUT du laser gauche | VL53L0X #1 |
+| 24 | XSHUT du laser droite | VL53L0X #2 |
+| A0 | Capteur de ligne avant-gauche | TCRT5000 #1 |
+| A1 | Capteur de ligne avant-droit | TCRT5000 #2 |
+| A2 | Capteur de ligne arriere | TCRT5000 #3 |
+| 5V | Alimentation 5V (vient du LM2596, PAS de la batterie directement !) | LM2596 |
+| GND | Masse commune (tout le monde y est branche) | Tous |
 
-## Ordre de montage recommande
+## Conseils importants
 
-### Etape 1 — Alimentation
+### La masse commune (GND)
 
-1. Souder les fils de la batterie NiMH (connecteur adapte, pas de soudure directe sur les cellules)
-2. Brancher le buck LM2596 : Vin sur batterie, regler Vout a 5.0V au multimetre
-3. Connecter Vout du buck sur le pin 5V de l'Arduino Mega (+ GND sur GND)
-4. Verifier : l'Arduino s'allume normalement sur batterie
+C'est la cause numero 1 des problemes. **Tous les composants doivent partager le meme GND.** Si un seul GND est mal branche, les moteurs peuvent se comporter bizarrement, les capteurs peuvent donner des valeurs fausses, etc. En cas de probleme, verifier les GND en premier.
 
-### Etape 2 — Moteurs
+### Le poids
 
-1. Fixer les moteurs N20 au chassis, monter les roues silicone
-2. Connecter les moteurs aux borniers OUT1/OUT2 et OUT3/OUT4 du L298N
-3. Brancher 12V/GND du L298N sur la batterie (en parallele avec le buck)
-4. **Enlever le jumper 5V** du L298N
-5. Cabler ENA→10, IN1→9, IN2→8, IN3→6, IN4→7, ENB→5
-6. Upload `test_moteur1/test_moteur1.ino` → verifier que le moteur gauche tourne
-7. Upload `test_2moteurs/test_2moteurs.ino` → verifier avant/arriere/rotation
+En competition, le robot doit peser moins de 1 kg. Voici une estimation du poids de chaque piece :
 
-### Etape 3 — Capteurs de ligne
+| Piece | Poids |
+| ----- | ----- |
+| Arduino Mega + shield | ~55g |
+| L298N | ~30g |
+| 2 moteurs N20 + roues | ~40g |
+| Batterie NiMH 7.2V | ~150-200g |
+| Chassis + lame | ~300-400g |
+| Capteurs + cablage | ~50g |
+| **Total** | **~625-775g** |
 
-1. Monter le shield sensor sur l'Arduino Mega
-2. Brancher les 3 TCRT5000 sur A0, A1, A2 (section ANALOG du shield : S/V/G)
-3. Fixer les capteurs au chassis : 2 a l'avant (gauche/droite), 1 a l'arriere
-4. Upload `test_capteur_ligne/test_capteur_ligne.ino`
-5. Ouvrir Serial Monitor (9600 baud), presenter une surface blanche et noire
-6. Noter les valeurs, ajuster `SEUIL_BLANC` si necessaire (defaut: 300)
-7. Upload `test_ligne_moteurs/test_ligne_moteurs.ino` → le robot recule sur la ligne blanche
+Il reste de la marge, mais attention au chassis : c'est souvent la piece la plus lourde.
 
-### Etape 4 — Capteurs de distance
+### Les vibrations
 
-1. Brancher les 3 VL53L0X sur le bus I2C : SDA→20, SCL→21, VCC→5V, GND
-2. Brancher les XSHUT : laser0→22, laser1→23, laser2→24
-3. Monter les capteurs a l'avant du robot : centre + 2 lateraux a ~30 degres
-4. Verifier l'init dans le Serial Monitor ("Lasers OK" au boot)
+Les capteurs laser (VL53L0X) et l'accelerometre (MPU6050) sont sensibles aux vibrations. Si le robot vibre beaucoup en roulant, les mesures seront bruitees. Utiliser de la mousse ou du scotch double-face epais entre les capteurs et le chassis.
 
-### Etape 5 — IMU
+### Les fils I2C
 
-1. Brancher le MPU6050 sur le bus I2C (memes SDA/SCL que les VL53L0X)
-2. AD0 → GND (adresse 0x68)
-3. Monter l'IMU au centre du robot, bien fixe (pas de vibrations)
+Le bus I2C (les fils SDA et SCL) est partage entre 4 capteurs. Pour que ca marche bien :
 
-### Etape 6 — Bouton et finalisation
+- Garder les fils **courts** (moins de 15 cm)
+- Si les capteurs se deconnectent souvent, ajouter une resistance de 4.7 kohms entre SDA et 5V, et une autre entre SCL et 5V (certains modules les ont deja)
+- Le code a un systeme de recuperation automatique si le bus se bloque
 
-1. Brancher le bouton entre Pin 2 et GND
-2. Upload `sumo_strategy/sumo_strategy.ino`
-3. La LED onboard (pin 13) clignote lentement → en attente
-4. Appui bouton → LED clignote vite (5s countdown) → GO
+### Le watchdog
 
-## Conseils de montage
-
-### Masse commune (GND)
-
-**Critique** : tous les composants doivent partager le meme GND. Un GND mal connecte entre l'Arduino et le L298N cause des comportements erratiques des moteurs. Verifier a l'ohmmetre que tous les GND sont bien relies.
-
-### Poids
-
-Budget masse pour rester sous 1kg :
-
-- Arduino Mega + shield : ~55g
-- L298N : ~30g
-- Moteurs N20 x2 + roues : ~40g
-- Batterie NiMH 7.2V : ~150-200g
-- Chassis + lame : ~300-400g
-- Capteurs + cablage : ~50g
-
-### Vibrations
-
-Les VL53L0X et le MPU6050 sont sensibles aux vibrations. Utiliser de la mousse ou du double-face epais pour les isoler du chassis metallique.
-
-### Bus I2C
-
-Le bus I2C est partage entre 4 composants (3x VL53L0X + MPU6050). Si le bus est instable :
-
-- Garder les fils I2C courts (< 15cm)
-- Ajouter des resistances de pull-up 4.7k entre SDA→5V et SCL→5V (certains breakouts les ont deja)
-- Le code inclut un recovery automatique (16 clocks sur SCL) en cas de blocage
-
-### Watchdog
-
-Le firmware active un watchdog de 500ms. Si le code plante ou boucle, l'Arduino redemarrera automatiquement. Ne pas ajouter de `delay()` superieurs a 400ms dans le code.
+Le code du robot active un "chien de garde" (watchdog). Si le programme se bloque pendant plus de 0.5 seconde, l'Arduino redemarre automatiquement. C'est une securite pour que le robot ne reste jamais immobile en plein match.

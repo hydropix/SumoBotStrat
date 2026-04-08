@@ -1,188 +1,148 @@
 # SumoBotStrat
 
-Robot sumo de competition (categorie 500g-1kg) base sur Arduino Mega 2560, dont la strategie a ete entierement developpee et optimisee par simulation avant d'etre portee sur le hardware reel.
+Un robot sumo autonome qui se bat tout seul sur un ring ! Il detecte son adversaire, le poursuit et essaie de le pousser hors de l'arene. Toute sa strategie a ete mise au point grace a un simulateur sur ordinateur, puis transferee sur le vrai robot.
 
-## Concept
+## C'est quoi un robot sumo ?
 
-L'approche de ce projet est **simulation-first** : plutot que de coder directement sur le robot et iterer par essais physiques, toute la strategie est developpee dans un simulateur physique fidele, optimisee par recherche Monte Carlo, puis portee sur Arduino.
+Le robot sumo, c'est un sport de robots : deux robots sont poses sur un ring circulaire noir (appele "dohyo"), et chacun doit pousser l'autre en dehors. Le ring a une bordure blanche que le robot doit detecter pour ne pas tomber lui-meme.
 
-```text
-Simulateur physique (JS)  -->  Optimisation Monte Carlo  -->  Port Arduino (C++)
-     60Hz / 240Hz sub             12 profils ennemis            Machine a etats
-     Moteurs + friction           16 parametres                 Capteurs reels
-     Capteurs simules             3 phases de raffinement       Watchdog + I2C recovery
-```
+Notre robot pese entre 500g et 1kg et fonctionne avec une carte **Arduino Mega 2560** (une sorte de mini-ordinateur programmable).
 
-## Architecture du simulateur
+## Notre approche : simuler avant de construire
 
-Le simulateur reproduit fidelement la physique du robot :
-- **Moteurs DC** : modele couple/vitesse avec stallTorque et noLoadOmega
-- **Friction** : coefficient mu=0.6 (pneus silicone sur dohyo), amortissement lateral
-- **Arena** : ring circulaire 77cm de diametre avec bordure blanche 22mm
-- **Capteurs** : 3x lasers VL53L0X (centre + 2 lateraux a ~30 deg), 3x TCRT5000 (ligne), IMU MPU6050
+Plutot que de programmer le robot a l'aveugle et de faire des dizaines d'essais physiques (ce qui prend du temps et casse le materiel), on a choisi une approche differente :
 
-Deux versions du simulateur :
-- [Simulateur visuel](https://hydropix.github.io/SumoBotStrat/simulation/index.html) — Version visuelle interactive avec telemetrie temps reel, controle des parametres par sliders, et mode ennemi manuel
-- [simulation/headless.js](simulation/headless.js) — Version headless Node.js pour tests batch (`node headless.js --rounds 500`)
+**1. On a cree un simulateur sur ordinateur** qui reproduit fidelement le comportement du robot : ses moteurs, ses capteurs, la physique des collisions, le ring...
 
-### Contrainte capteurs-uniquement
+**2. On a fait jouer le robot virtuel des milliers de matchs** contre differents types d'adversaires pour trouver les meilleurs reglages.
 
-Regle stricte : l'IA du bot (botAI) n'utilise **que** les donnees disponibles sur le robot reel. Sont interdits : position absolue (x,y), heading global, etat de l'ennemi (sauf via lasers), donnees internes de la simulation. Cela garantit que ce qui fonctionne en simulation fonctionnera sur le hardware.
-
-## Optimisation Monte Carlo
-
-La recherche des parametres optimaux se fait en 3 phases successives :
-
-### Phase 1 — Recherche large (montecarlo_v3.js)
-
-- **80 configurations** generees aleatoirement dans des plages larges
-- **200 rounds** par config contre **12 profils ennemis** :
-  - 8 profils basiques (tailles/masses/vitesses variees : S-light-slow, XL-heavy-fast, etc.)
-  - 4 profils "smart" (IA intelligente avec tracking, poids x2-x4 dans le score)
-- Score pondere : les victoires contre ennemis smart comptent 2-4x plus
-- **Top 8** revalide a 800 rounds pour confirmer
-
-### Phase 2 — Raffinement (montecarlo_v3_refine.js)
-
-- Plages resserrees a +/-20-40% autour du meilleur de Phase 1
-- **100 configurations**, 250 rounds chacune
-- **Top 10** revalide a 1500 rounds
-- Convergence vers la config optimale finale
-
-### Phase 3 — Validation finale
-
-- Test du champion a 3000 rounds contre chaque profil individuellement
-- Verification des cas limites (ennemi lourd+rapide, petit+agile)
-
-### 16 parametres optimises
-
-| Categorie | Parametres |
-| --------- | ---------- |
-| **Deplacement** | kp (gain steering), searchPwm, trackPwm, chargePwm, chargeThreshold |
-| **Evasion** | evadePwm, edgeSteer, centerFill |
-| **Flanking** | flankAngle, flankThreshold, flankPwm, flankEnabled |
-| **Counter-dodge** | counterThresh, counterDodgeTime, counterPwm |
-| **Tilt escape** | tiltEscapeSpin |
-
-### Resultats obtenus
-
-| Scenario | Win Rate |
-| -------- | -------- |
-| vs Ennemis basiques (8 profils) | 99.7-100% |
-| vs Smart enemy (standard) | 92.5% |
-| vs Smart-heavy-fast (m=0.7, s=1.2) | ~47% |
-
-La faiblesse contre l'ennemi smart+lourd+rapide est connue — cet adversaire combine IA omnisciente et momentum eleve, un scenario extreme rarement rencontre en competition reelle.
-
-## Machine a etats (8 etats)
+**3. On a transfere la strategie gagnante sur le vrai robot.**
 
 ```text
-                    +-----------+
-                    | WAIT_START|  (bouton)
-                    +-----+-----+
-                          |
-                    +-----v-----+
-                    | COUNTDOWN |  (5s reglementaire)
-                    +-----+-----+
-                          |
-              +-----------v-----------+
-              |        SEARCH         |  Rotation sur place
-              |  (spin + scan IMU)    |  jusqu'a detection laser
-              +-----------+-----------+
-                          |
-            +-------------v-------------+
-            |                           |
-    +-------v-------+          +--------v-------+
-    |     FLANK     |          |     TRACK      |
-    | Arc ~29 deg   |          | P-controller   |
-    | si >636mm     |          | kp=0.582       |
-    +-------+-------+          +--------+-------+
-            |                           |
-            +-------------+-------------+
-                          |
-                  +-------v-------+
-                  |    CHARGE     |
-                  | Pleine puiss. |
-                  | si <372mm     |
-                  +-------+-------+
-                          |
-                  +-------v-------+
-                  |     EVADE     |  Ligne detectee
-                  | Recul + pivot |  --> recul puis pivot
-                  +-------+-------+
-                          |
-                  +-------v-------+
-                  |    CENTER     |  Retour centre
-                  | 350ms tout    |  puis retour SEARCH
-                  | droit         |
-                  +-------+-------+
+    ORDINATEUR                                         ROBOT REEL
+ ┌──────────────┐     ┌──────────────┐     ┌──────────────────────┐
+ │  Simulateur  │ --> │ Optimisation │ --> │  Code Arduino final  │
+ │  (virtuel)   │     │ (des milliers│     │  (memes reglages)    │
+ │              │     │  de matchs)  │     │                      │
+ └──────────────┘     └──────────────┘     └──────────────────────┘
 ```
 
-Etats reactifs supplementaires (IMU) :
+## Le simulateur
 
-- **TILT_ESC** : robot souleve detecte par accelZ → recul + spin
-- **IMPACT** : choc lateral (|imuAy|>15) → spin vers la source 250ms
-- **COUNTER** : collision frontale (imuAx<-18.8) → esquive laterale 212ms
+Le simulateur est un programme qui fait "comme si" le robot existait dans l'ordinateur. Il calcule tout : comment les roues tournent, comment le robot glisse sur le sol, ce que voient les capteurs...
 
-## Ajustements et decisions cles
+Vous pouvez l'essayer directement dans votre navigateur :
 
-Decisions validees par Monte Carlo :
+**[Lancer le simulateur](https://hydropix.github.io/SumoBotStrat/simulation/index.html)** (cliquez pour essayer !)
 
-- **3 lasers a 30 deg** plutot que 90 deg : +8.2% win rate (95.1% pondere). Les capteurs a 90 deg (78-88%) perdent la cible trop facilement
-- **Edge-charge** : continuer a pousser si ennemi en vue malgre la detection de bord. Reduit les timeouts de 26% a 13%
-- **searchPwm=0.95** et **trackPwm=0.9** : gains confirmes de +1% WR chacun
-- **Controleur P simple** (kp=0.582) : un PD (avec terme derive) a ete catastrophique — instabilite totale
-- **chargeThreshold=372mm** : seuil optimal. En dessous de 300mm, impact negatif
+Dans le simulateur, vous verrez :
+- Le ring noir avec sa bordure blanche
+- Notre robot (en bleu) qui tourne, cherche, et attaque
+- Un adversaire (en rouge) qu'on peut controler
+- Les faisceaux laser qui detectent l'ennemi
+- L'etat actuel du robot (recherche, poursuite, charge, esquive...)
 
-## Structure du projet
+### La regle d'or : pas de triche !
 
-```text
-SumoBotStrat/
-├── simulation/
-│   ├── index.html              Simulateur visuel interactif
-│   ├── headless.js             Simulateur headless (Node.js)
-│   ├── montecarlo_v3.js        Recherche Monte Carlo large
-│   ├── montecarlo_v3_refine.js Raffinement Monte Carlo
-│   ├── montecarlo.js           v1 (archive)
-│   └── montecarlo_v2.js        v2 (archive)
-├── sumo_strategy/
-│   └── sumo_strategy.ino       Strategie finale Arduino Mega
-├── test_moteur1/               Test Phase 2 : 1 moteur
-├── test_2moteurs/              Test Phase 2 : 2 moteurs
-├── test_capteur_ligne/         Test Phase 3 : capteur TCRT5000
-├── test_ligne_moteurs/         Test Phase 3 : ligne + moteurs
-├── docs/
-│   ├── schema_electrique.svg   Schema electrique
-│   ├── schema_mecanique.svg    Schema mecanique
-│   └── HARDWARE.md             Guide de montage complet
-└── CLAUDE.md                   Regles du projet (capteurs-only, pinout)
-```
+Le robot dans le simulateur n'a le droit d'utiliser **que** les informations qu'il aurait en vrai :
+- Ses 3 capteurs laser pour "voir" l'adversaire (portee ~80 cm)
+- Ses 3 capteurs de ligne pour detecter le bord du ring
+- Son accelerometre/gyroscope pour sentir les chocs et sa rotation
 
-## Demarrage rapide
+Il n'a **pas le droit** de connaitre sa position exacte sur le ring, ni la position de l'ennemi. Comme ca, ce qui marche en simulation marchera aussi en vrai !
 
-### Simulateur visuel
+## Comment on a trouve les meilleurs reglages : la methode Monte Carlo
 
-Ouvrir `simulation/index.html` dans un navigateur. Aucune dependance requise.
+Le robot a 16 reglages qu'on peut ajuster : a quelle vitesse il tourne pour chercher, a quelle vitesse il charge, a quel angle il attaque de cote, etc. Trouver la meilleure combinaison a la main serait impossible (il y a des milliards de possibilites).
 
-### Monte Carlo
+On a donc utilise la **methode Monte Carlo** : c'est une technique qui consiste a essayer beaucoup de combinaisons au hasard et garder les meilleures. C'est un peu comme si vous lanciez des flechettes au hasard sur une cible, et qu'a chaque tour vous vous rapprochiez de la zone ou tombent les meilleures flechettes.
 
-```bash
-cd simulation
-node montecarlo_v3.js          # Phase 1 : recherche large
-node montecarlo_v3_refine.js   # Phase 2 : raffinement
-node headless.js --rounds 3000 # Validation finale
-```
+### Etape 1 — Chercher large
 
-### Arduino
+On genere **80 combinaisons de reglages** au hasard, et chacune joue **200 matchs** contre **12 adversaires differents** :
+- Des adversaires de toutes tailles (petits, gros, legers, lourds, lents, rapides)
+- Des adversaires "intelligents" qui traquent aussi notre robot
 
-1. Ouvrir `sumo_strategy/sumo_strategy.ino` dans Arduino IDE
-2. Selectionner Board: Arduino Mega 2560, Port: COMx
-3. Installer la librairie `VL53L0X` par Pololu
-4. Upload et connecter le bouton START sur pin 2
+On garde les 8 meilleures combinaisons et on les reteste avec 800 matchs pour etre sur.
 
-## Hardware
+### Etape 2 — Affiner
 
-Voir [docs/HARDWARE.md](docs/HARDWARE.md) pour le guide de montage complet avec schemas de cablage detailles.
+Autour de la meilleure combinaison de l'etape 1, on genere **100 nouvelles combinaisons** proches (on ajuste legerement chaque reglage). On les reteste et on garde la meilleure.
+
+### Etape 3 — Valider
+
+On fait jouer le champion **3000 matchs** contre chaque type d'adversaire pour confirmer qu'il est vraiment bon partout.
+
+### Resultats
+
+| Adversaire | Victoires |
+| ---------- | --------- |
+| Adversaires basiques (8 types differents) | 99.7 a 100% |
+| Adversaire intelligent (standard) | 92.5% |
+| Adversaire intelligent + lourd + rapide | ~47% |
+
+Le seul adversaire problematique est un ennemi a la fois intelligent, lourd et rapide. En competition reelle, ce scenario est tres rare.
+
+## Comment le robot "reflechit" : la machine a etats
+
+Le robot ne "pense" pas vraiment, mais il suit des regles precises. A chaque instant, il est dans un **etat** (une situation) et reagit en fonction de ce qu'il detecte. Voici ses 8 etats :
+
+| Etat | Ce que fait le robot | Quand ? |
+| ---- | -------------------- | ------- |
+| **WAIT_START** | Attend qu'on appuie sur le bouton | Au demarrage |
+| **COUNTDOWN** | Attend 5 secondes (reglementaire) | Apres le bouton |
+| **SEARCH** | Tourne sur lui-meme pour scanner autour | Quand il ne voit rien |
+| **FLANK** | Approche en arc de cercle (~30 deg) | Ennemi detecte mais loin (> 63 cm) |
+| **TRACK** | Suit l'ennemi en ajustant sa direction | Ennemi detecte a moyenne distance |
+| **CHARGE** | Fonce a pleine puissance ! | Ennemi proche (< 37 cm) |
+| **EVADE** | Recule et tourne | Bord du ring detecte |
+| **CENTER** | Avance tout droit pour revenir au centre | Apres une esquive |
+
+En plus, le robot reagit aux chocs grace a son accelerometre :
+- **Souleve par l'adversaire** : il recule et tourne pour se degager
+- **Frappe sur le cote** : il tourne vers l'attaquant pour riposter
+- **Frappe de face** : il esquive lateralement
+
+## Ce qu'on a decouvert grace a la simulation
+
+La simulation nous a permis de tester des idees et de garder seulement ce qui marche. Voici les decouvertes les plus importantes :
+
+- **Les capteurs laser a 30 deg, c'est mieux que 90 deg.** On a teste avec les capteurs lateraux pointes a 90 degres (sur les cotes), mais le robot perdait trop souvent la cible. A 30 degres, il a un champ de vision plus concentre vers l'avant et gagne **8% de matchs en plus**.
+
+- **Pousser meme au bord du ring, ca marche.** Normalement le robot recule quand il detecte le bord. Mais si l'ennemi est juste devant, on le laisse continuer a pousser. Ca reduit les matchs nuls de 26% a 13%.
+
+- **Un controleur simple est meilleur qu'un controleur complique.** On a essaye un systeme de direction plus avance (controleur PD), mais le robot oscillait dans tous les sens. Le controleur simple (P) est stable et efficace.
+
+## Les fichiers du projet
+
+| Dossier | Contenu |
+| ------- | ------- |
+| `simulation/` | Le simulateur (ouvrir `index.html` dans un navigateur) |
+| `simulation/montecarlo_v3.js` | Le programme d'optimisation Monte Carlo |
+| `sumo_strategy/` | Le code final pour l'Arduino (le "cerveau" du robot) |
+| `test_moteur1/` | Programme de test pour 1 moteur |
+| `test_2moteurs/` | Programme de test pour 2 moteurs |
+| `test_capteur_ligne/` | Programme de test pour les capteurs de bord |
+| `test_ligne_moteurs/` | Programme de test : capteurs + moteurs ensemble |
+| `docs/` | Schemas electriques et [guide de montage](docs/HARDWARE.md) |
+
+## Essayer le simulateur
+
+Ouvrir le lien ci-dessous dans un navigateur (Chrome, Firefox, Edge...). Rien a installer !
+
+**[Lancer le simulateur](https://hydropix.github.io/SumoBotStrat/simulation/index.html)**
+
+## Programmer le vrai robot
+
+1. Installer [Arduino IDE](https://www.arduino.cc/en/software) sur votre ordinateur
+2. Brancher l'Arduino Mega en USB
+3. Ouvrir le fichier `sumo_strategy/sumo_strategy.ino`
+4. Cliquer sur la fleche "Upload" pour envoyer le code sur le robot
+5. Appuyer sur le bouton START du robot pour lancer le match !
+
+## Construire le robot
+
+Voir le **[guide de montage complet](docs/HARDWARE.md)** pour la liste des pieces et les instructions de cablage pas-a-pas.
 
 ## Licence
 
