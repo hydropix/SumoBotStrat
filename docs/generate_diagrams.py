@@ -128,9 +128,17 @@ def generate_alimentation():
     ax.text(50, 4, "GND COMMUN — masse partagee par tous les composants",
             ha='center', va='center', color='#dfe6e9', fontsize=10, fontweight='bold',
             fontfamily='sans-serif')
-    # Fils GND vers la barre
-    for gx in [22, 39, 78, 71.5, 89.5]:
-        wire(ax, [(gx, 6), (gx, 15 if gx in [22, 39] else 15)], COL['gnd'], lw=1.5)
+    # Fils GND vers la barre (un par composant)
+    # LM2596 (centre x=22) -> bas du bloc y=50
+    wire(ax, [(22, 6), (22, 50)], COL['gnd'], lw=1.5)
+    # Arduino (centre x=39) -> bas du bloc y=15
+    wire(ax, [(39, 6), (39, 15)], COL['gnd'], lw=1.5)
+    # L298N (centre x=78) -> bas du bloc y=50
+    wire(ax, [(78, 6), (78, 50)], COL['gnd'], lw=1.5)
+    # Moteur G (centre x=71.5) -> bas du bloc y=15
+    wire(ax, [(71.5, 6), (71.5, 15)], COL['gnd'], lw=1.5)
+    # Moteur D (centre x=89.5) -> bas du bloc y=15
+    wire(ax, [(89.5, 6), (89.5, 15)], COL['gnd'], lw=1.5)
 
     # Avertissement
     ax.text(50, 46, "JAMAIS brancher 7.2V directement sur le pin 5V de l'Arduino !",
