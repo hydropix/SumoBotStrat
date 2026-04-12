@@ -1,0 +1,68 @@
+<mujoco model="enemy">
+  <!--
+    Enemy robot: same dimensions as sumobot by default.
+    Configurable mass, size, speed via scene assembly.
+  -->
+
+  <default>
+    <joint damping="0.0001" armature="0.00001"/>
+    <geom condim="4" solimp="0.95 0.99 0.001" solref="0.004 1"/>
+  </default>
+
+  <asset>
+    <material name="enemy_red" rgba="0.75 0.2 0.2 1"/>
+    <material name="enemy_wedge" rgba="0.6 0.15 0.15 1"/>
+    <material name="enemy_wheel" rgba="0.15 0.15 0.15 1"/>
+  </asset>
+
+  <worldbody>
+    <body name="ene_chassis" pos="0 0 0.065">
+      <freejoint name="ene_root"/>
+
+      <inertial pos="-0.005 0 -0.003" mass="0.47"
+                diaginertia="0.000396 0.000396 0.000784"/>
+
+      <geom name="ene_body" type="box" size="0.05 0.05 0.0125"
+            material="enemy_red" friction="0.4 0.005 0.001" mass="0"/>
+
+
+      <geom name="ene_skid" type="sphere" size="0.005"
+            pos="-0.045 0 -0.0125" friction="0.2 0.001 0.001" mass="0.005"/>
+
+      <!-- Sensor sites -->
+      <site name="ene_laser_center" pos="0.05 0 0" size="0.003"/>
+      <site name="ene_laser_left"   pos="0.05 -0.025 0" euler="0 0 -0.526" size="0.003"/>
+      <site name="ene_laser_right"  pos="0.05  0.025 0" euler="0 0  0.526" size="0.003"/>
+      <site name="ene_line_fl" pos="0.047 -0.045 -0.0125" size="0.004"/>
+      <site name="ene_line_fr" pos="0.047  0.045 -0.0125" size="0.004"/>
+      <site name="ene_line_r"  pos="-0.047 0     -0.0125" size="0.004"/>
+      <site name="ene_imu" pos="0 0 0" size="0.002"/>
+
+      <body name="ene_wheel_L" pos="0 -0.04 -0.003">
+        <joint name="ene_wheel_L_joint" type="hinge" axis="0 1 0"/>
+        <geom name="ene_wheel_L_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="enemy_wheel"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+
+      <body name="ene_wheel_R" pos="0 0.04 -0.003">
+        <joint name="ene_wheel_R_joint" type="hinge" axis="0 1 0"/>
+        <geom name="ene_wheel_R_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="enemy_wheel"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="ene_motor_L" joint="ene_wheel_L_joint"
+           ctrlrange="-0.05 0.05" ctrllimited="true"/>
+    <motor name="ene_motor_R" joint="ene_wheel_R_joint"
+           ctrlrange="-0.05 0.05" ctrllimited="true"/>
+  </actuator>
+
+  <sensor>
+    <accelerometer name="ene_accel" site="ene_imu"/>
+    <gyro name="ene_gyro" site="ene_imu"/>
+  </sensor>
+</mujoco>

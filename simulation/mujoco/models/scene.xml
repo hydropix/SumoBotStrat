@@ -1,0 +1,149 @@
+<mujoco model="sumobot_scene">
+  <!--
+    Complete sumo scene: arena + two robots + lighting.
+    Timestep 1/240s matches the JS simulation.
+  -->
+
+  <option timestep="0.004167" gravity="0 0 -9.81" integrator="implicit">
+    <flag contact="enable" energy="disable"/>
+  </option>
+
+  <compiler angle="radian" autolimits="true"/>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.3 0.3 0.3" specular="0.1 0.1 0.1"/>
+    <quality shadowsize="2048"/>
+    <map znear="0.005" zfar="10"/>
+  </visual>
+
+  <default>
+    <joint damping="0.0001" armature="0.00001"/>
+    <geom condim="4" solimp="0.95 0.99 0.001" solref="0.004 1"/>
+  </default>
+
+  <asset>
+    <!-- Arena materials -->
+    <material name="dohyo_black" rgba="0.12 0.12 0.12 1"/>
+    <material name="dohyo_border" rgba="1 1 1 1"/>
+    <material name="floor_dark" rgba="0.18 0.18 0.22 1"/>
+    <!-- Bot materials -->
+    <material name="chassis_blue" rgba="0.2 0.35 0.75 1"/>
+    <material name="wedge_yellow" rgba="0.85 0.78 0.15 1"/>
+    <material name="wheel_black" rgba="0.1 0.1 0.1 1"/>
+    <!-- Enemy materials -->
+    <material name="enemy_red" rgba="0.75 0.2 0.2 1"/>
+    <material name="enemy_wedge" rgba="0.6 0.15 0.15 1"/>
+    <material name="enemy_wheel" rgba="0.15 0.15 0.15 1"/>
+  </asset>
+
+  <worldbody>
+    <!-- Lighting -->
+    <light name="top_light" pos="0 0 1.5" dir="0 0 -1" diffuse="0.8 0.8 0.8"
+           specular="0.3 0.3 0.3" castshadow="true"/>
+    <light name="side_light" pos="0.8 0.8 1.0" dir="-0.4 -0.4 -0.7"
+           diffuse="0.4 0.4 0.4" specular="0.1 0.1 0.1"/>
+
+    <!-- Camera -->
+    <camera name="top_view" pos="0 0 1.2" euler="0 0 0" fovy="50"/>
+    <camera name="side_view" pos="0.8 -0.8 0.5" xyaxes="1 1 0 0 0 1" fovy="45"/>
+
+    <!-- ===== ARENA ===== -->
+    <geom name="floor" type="plane" size="1.5 1.5 0.01"
+          material="floor_dark" friction="0.3 0.005 0.001"/>
+
+    <body name="dohyo" pos="0 0 0.025">
+      <geom name="dohyo_surface" type="cylinder" size="0.385 0.025"
+            material="dohyo_black" friction="0.6 0.005 0.001"
+            condim="4" solimp="0.95 0.99 0.001" solref="0.004 1"/>
+      <geom name="dohyo_border_ring" type="cylinder" size="0.385 0.0005"
+            pos="0 0 0.0255" material="dohyo_border"
+            contype="0" conaffinity="0"/>
+    </body>
+
+    <!-- ===== BOT (blue) ===== -->
+    <body name="bot_chassis" pos="0.1 0 0.065">
+      <freejoint name="bot_root"/>
+      <inertial pos="-0.008 0 -0.004" mass="0.47"
+                diaginertia="0.000396 0.000396 0.000784"/>
+
+      <geom name="bot_body" type="box" size="0.05 0.05 0.0125"
+            material="chassis_blue" friction="0.4 0.005 0.001" mass="0"/>
+      <geom name="bot_wedge" type="box" size="0.018 0.048 0.001"
+            pos="0.052 0 -0.011" euler="0 0.224 0"
+            material="wedge_yellow" friction="0.3 0.003 0.001" mass="0.01"/>
+      <geom name="bot_skid" type="sphere" size="0.005"
+            pos="-0.045 0 -0.0125" friction="0.2 0.001 0.001" mass="0.005"/>
+
+      <!-- Sensor sites -->
+      <site name="bot_laser_center" pos="0.05 0 0" size="0.003"/>
+      <site name="bot_laser_left"   pos="0.05 -0.025 0" euler="0 0 -0.526" size="0.003"/>
+      <site name="bot_laser_right"  pos="0.05  0.025 0" euler="0 0  0.526" size="0.003"/>
+      <site name="bot_line_fl" pos="0.047 -0.045 -0.0125" size="0.004" rgba="1 0 0 0.5"/>
+      <site name="bot_line_fr" pos="0.047  0.045 -0.0125" size="0.004" rgba="1 0 0 0.5"/>
+      <site name="bot_line_r"  pos="-0.047 0     -0.0125" size="0.004" rgba="0 1 0 0.5"/>
+      <site name="bot_imu" pos="0 0 0" size="0.002"/>
+
+      <body name="bot_wheel_L" pos="0 -0.04 -0.003">
+        <joint name="bot_wheel_L_joint" type="hinge" axis="0 1 0"/>
+        <geom name="bot_wheel_L_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="wheel_black"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+      <body name="bot_wheel_R" pos="0 0.04 -0.003">
+        <joint name="bot_wheel_R_joint" type="hinge" axis="0 1 0"/>
+        <geom name="bot_wheel_R_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="wheel_black"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+    </body>
+
+    <!-- ===== ENEMY (red) ===== -->
+    <body name="ene_chassis" pos="-0.1 0 0.065">
+      <freejoint name="ene_root"/>
+      <inertial pos="-0.005 0 -0.003" mass="0.47"
+                diaginertia="0.000396 0.000396 0.000784"/>
+
+      <geom name="ene_body" type="box" size="0.05 0.05 0.0125"
+            material="enemy_red" friction="0.4 0.005 0.001" mass="0"/>
+      <geom name="ene_skid" type="sphere" size="0.005"
+            pos="-0.045 0 -0.0125" friction="0.2 0.001 0.001" mass="0.005"/>
+
+      <site name="ene_laser_center" pos="0.05 0 0" size="0.003"/>
+      <site name="ene_laser_left"   pos="0.05 -0.025 0" euler="0 0 -0.526" size="0.003"/>
+      <site name="ene_laser_right"  pos="0.05  0.025 0" euler="0 0  0.526" size="0.003"/>
+      <site name="ene_line_fl" pos="0.047 -0.045 -0.0125" size="0.004"/>
+      <site name="ene_line_fr" pos="0.047  0.045 -0.0125" size="0.004"/>
+      <site name="ene_line_r"  pos="-0.047 0     -0.0125" size="0.004"/>
+      <site name="ene_imu" pos="0 0 0" size="0.002"/>
+
+      <body name="ene_wheel_L" pos="0 -0.04 -0.003">
+        <joint name="ene_wheel_L_joint" type="hinge" axis="0 1 0"/>
+        <geom name="ene_wheel_L_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="enemy_wheel"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+      <body name="ene_wheel_R" pos="0 0.04 -0.003">
+        <joint name="ene_wheel_R_joint" type="hinge" axis="0 1 0"/>
+        <geom name="ene_wheel_R_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="enemy_wheel"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- Actuators -->
+  <actuator>
+    <motor name="bot_motor_L" joint="bot_wheel_L_joint" ctrlrange="-0.05 0.05" ctrllimited="true"/>
+    <motor name="bot_motor_R" joint="bot_wheel_R_joint" ctrlrange="-0.05 0.05" ctrllimited="true"/>
+    <motor name="ene_motor_L" joint="ene_wheel_L_joint" ctrlrange="-0.05 0.05" ctrllimited="true"/>
+    <motor name="ene_motor_R" joint="ene_wheel_R_joint" ctrlrange="-0.05 0.05" ctrllimited="true"/>
+  </actuator>
+
+  <!-- Sensors -->
+  <sensor>
+    <accelerometer name="bot_accel" site="bot_imu"/>
+    <gyro name="bot_gyro" site="bot_imu"/>
+    <accelerometer name="ene_accel" site="ene_imu"/>
+    <gyro name="ene_gyro" site="ene_imu"/>
+  </sensor>
+</mujoco>

@@ -1,0 +1,27 @@
+<mujoco model="sumo_arena">
+  <!-- Dohyo arena: 77cm diameter, raised 5cm, white border 2.2cm -->
+
+  <asset>
+    <material name="dohyo_black" rgba="0.12 0.12 0.12 1"/>
+    <material name="dohyo_border" rgba="1 1 1 1"/>
+    <material name="floor_dark" rgba="0.18 0.18 0.22 1"/>
+  </asset>
+
+  <worldbody>
+    <!-- Floor below arena (catches fallen robots) -->
+    <geom name="floor" type="plane" size="1.5 1.5 0.01"
+          material="floor_dark" friction="0.3 0.005 0.001"/>
+
+    <!-- Dohyo platform -->
+    <body name="dohyo" pos="0 0 0.025">
+      <!-- Main surface -->
+      <geom name="dohyo_surface" type="cylinder" size="0.385 0.025"
+            material="dohyo_black" friction="0.6 0.005 0.001"
+            condim="4" solimp="0.95 0.99 0.001" solref="0.004 1"/>
+      <!-- White border ring (visual only, no collision) -->
+      <geom name="dohyo_border_ring" type="cylinder" size="0.385 0.0005"
+            pos="0 0 0.0255" material="dohyo_border"
+            contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>

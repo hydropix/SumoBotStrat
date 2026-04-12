@@ -2,6 +2,8 @@
 
 Un robot sumo autonome qui se bat tout seul sur un ring ! Il detecte son adversaire, le poursuit et essaie de le pousser hors de l'arene. Toute sa strategie a ete mise au point grace a un simulateur sur ordinateur, puis transferee sur le vrai robot.
 
+![SumoBot MuJoCo simulation](python_ztyC2lxIAz-output.gif)
+
 ## C'est quoi un robot sumo ?
 
 Le robot sumo, c'est un sport de robots : deux robots sont poses sur un ring circulaire noir (appele "dohyo"), et chacun doit pousser l'autre en dehors. Le ring a une bordure blanche que le robot doit detecter pour ne pas tomber lui-meme.
@@ -50,6 +52,31 @@ Le robot dans le simulateur n'a le droit d'utiliser **que** les informations qu'
 - Son accelerometre/gyroscope pour sentir les chocs et sa rotation
 
 Il n'a **pas le droit** de connaitre sa position exacte sur le ring, ni la position de l'ennemi. Comme ca, ce qui marche en simulation marchera aussi en vrai !
+
+### Deux simulateurs complementaires
+
+Le projet contient en fait **deux systemes de simulation** qui partagent la meme regle capteurs-uniquement :
+
+**1. Simulateur JavaScript ([simulation/](simulation/))** — Simulation 2D legere (HTML + Canvas, zero dependance). C'est le simulateur utilise pour l'optimisation Monte Carlo massive et l'iteration rapide sur la strategie. Il tourne dans le navigateur ou en batch Node.js via [headless.js](simulation/headless.js) et [montecarlo.js](simulation/montecarlo.js).
+
+**2. Simulateur MuJoCo ([simulation/mujoco/](simulation/mujoco/))** — Simulation physique 3D haute fidelite basee sur [MuJoCo](https://mujoco.org/) (Python). Permet de valider la strategie sur une physique rigide realiste (collisions, frottements, inertie 3D) avant le portage sur Arduino. Le GIF en haut du README montre ce simulateur en action.
+
+Structure du simulateur MuJoCo :
+- [models/](simulation/mujoco/models/) — modeles XML MuJoCo (arene, bot, ennemi, scene)
+- [physics/](simulation/mujoco/physics/) — moteur de simulation et modele moteur N20
+- [sensors/](simulation/mujoco/sensors/) — capteurs simules (ligne TCRT5000, laser VL53L0X, IMU MPU6050)
+- [ai/](simulation/mujoco/ai/) — `bot_ai.py`, `enemy_ai.py`, parametres de strategie
+- [runners/](simulation/mujoco/runners/) — `viewer.py` (interactif 3D), `headless.py` (batch), `montecarlo.py`
+
+Installation et lancement du simulateur MuJoCo :
+
+```bash
+cd simulation/mujoco
+setup.bat              # cree venv + installe mujoco, numpy
+run_viewer.bat         # viewer 3D interactif
+run_headless.bat       # batch de matchs headless
+run_montecarlo.bat     # optimisation des parametres
+```
 
 ## Comment on a trouve les meilleurs reglages : la methode Monte Carlo
 

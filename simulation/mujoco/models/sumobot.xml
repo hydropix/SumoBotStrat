@@ -1,0 +1,86 @@
+<mujoco model="sumobot">
+  <!--
+    SumoBot robot: 10x10cm chassis, 500g total, N20 motors, differential drive.
+    Coordinate frame: X=forward, Y=left, Z=up.
+    Chassis bottom at z=0.065 (arena top=0.05, wheel radius=0.015).
+  -->
+
+  <default>
+    <joint damping="0.0001" armature="0.00001"/>
+    <geom condim="4" solimp="0.95 0.99 0.001" solref="0.004 1"/>
+  </default>
+
+  <asset>
+    <material name="chassis_blue" rgba="0.2 0.35 0.75 1"/>
+    <material name="wedge_yellow" rgba="0.85 0.78 0.15 1"/>
+    <material name="wheel_black" rgba="0.1 0.1 0.1 1"/>
+  </asset>
+
+  <worldbody>
+    <body name="bot_chassis" pos="0 0 0.065">
+      <freejoint name="bot_root"/>
+
+      <!-- Chassis inertial: CoG slightly rear and low (battery placement) -->
+      <inertial pos="-0.008 0 -0.004" mass="0.47"
+                diaginertia="0.000396 0.000396 0.000784"/>
+
+      <!-- Main body: 10x10x2.5cm box -->
+      <geom name="bot_body" type="box" size="0.05 0.05 0.0125"
+            material="chassis_blue" friction="0.4 0.005 0.001" mass="0"/>
+
+      <!-- Front wedge: angled blade for getting under opponent -->
+      <geom name="bot_wedge" type="box" size="0.018 0.048 0.001"
+            pos="0.052 0 -0.011" euler="0 0.224 0"
+            material="wedge_yellow" friction="0.3 0.003 0.001" mass="0.01"/>
+
+      <!-- Rear skid (prevents tipping backward) -->
+      <geom name="bot_skid" type="sphere" size="0.005"
+            pos="-0.045 0 -0.0125" friction="0.2 0.001 0.001" mass="0.005"/>
+
+      <!-- ===== SENSOR SITES ===== -->
+      <!-- Laser origins (front face) -->
+      <site name="bot_laser_center" pos="0.05 0 0" euler="0 0 0" size="0.003"/>
+      <site name="bot_laser_left"   pos="0.05 -0.025 0" euler="0 0 -0.526" size="0.003"/>
+      <site name="bot_laser_right"  pos="0.05  0.025 0" euler="0 0  0.526" size="0.003"/>
+
+      <!-- Line sensor positions (bottom face) -->
+      <site name="bot_line_fl" pos="0.047 -0.045 -0.0125" size="0.004" rgba="1 0 0 0.5"/>
+      <site name="bot_line_fr" pos="0.047  0.045 -0.0125" size="0.004" rgba="1 0 0 0.5"/>
+      <site name="bot_line_r"  pos="-0.047 0     -0.0125" size="0.004" rgba="0 1 0 0.5"/>
+
+      <!-- IMU site (center of chassis) -->
+      <site name="bot_imu" pos="0 0 0" size="0.002"/>
+
+      <!-- ===== WHEELS ===== -->
+      <!-- Left wheel (Y-negative side) -->
+      <body name="bot_wheel_L" pos="0 -0.04 -0.003">
+        <joint name="bot_wheel_L_joint" type="hinge" axis="0 1 0"/>
+        <geom name="bot_wheel_L_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="wheel_black"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+
+      <!-- Right wheel (Y-positive side) -->
+      <body name="bot_wheel_R" pos="0 0.04 -0.003">
+        <joint name="bot_wheel_R_joint" type="hinge" axis="0 1 0"/>
+        <geom name="bot_wheel_R_geom" type="cylinder" size="0.015 0.005"
+              euler="90 0 0" material="wheel_black"
+              friction="0.6 0.008 0.002" mass="0.008" condim="4"/>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- Actuators: torque-controlled motors -->
+  <actuator>
+    <motor name="bot_motor_L" joint="bot_wheel_L_joint"
+           ctrlrange="-0.05 0.05" ctrllimited="true"/>
+    <motor name="bot_motor_R" joint="bot_wheel_R_joint"
+           ctrlrange="-0.05 0.05" ctrllimited="true"/>
+  </actuator>
+
+  <!-- Sensors -->
+  <sensor>
+    <accelerometer name="bot_accel" site="bot_imu"/>
+    <gyro name="bot_gyro" site="bot_imu"/>
+  </sensor>
+</mujoco>
